@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block body %}
+{% include "navbar.html" %}
+<title>Tessaract OCR Training</title>
+<section class="hero is-primary is-bold is-small">
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      <div id="settings" class="settings-box">
+        <div class="settings-area">    
+          <h1 class="title">Training</h1>   
+
+	  <form action="/start_training">
+ <label for="language">Select a template to start with:</label>
+<select name="template" id="template">
+  {% for template in templates %}
+ 
+ <option value="{{template}}">{{template}}</option> 
+
+ {% endfor %}
+
+</select>
+
+
+<input type="submit" value="Submit">
+
+</form>
+
+ 
+        </div>
+      </div>    
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="../static/js/scripts.js"></script>
+{% endblock %}

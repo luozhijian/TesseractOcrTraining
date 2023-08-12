@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block body %}
+{% include "navbar.html" %}
+<title>Tessaract OCR Training</title>
+<section class="hero is-primary is-bold is-small">
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      <div id="settings" class="settings-box">
+        <div class="settings-area">    
+          <h1 class="title">Images</h1>      
+		  
+		  <form id="uploadbanner" enctype="multipart/form-data" method="post" action="/upload">
+   <input id="fileupload" name="myfile" type="file" />
+   <input type="submit" value="submit" id="submit" />
+</form>
+<br/>
+
+		<table style="margin-left: 20px;">
+<!-- Table headers -->
+    <th>
+        <tr style="color: silver; margin-left: 10px ">    
+        <td>Image</td>
+        <td>TextFile</td>
+        <td>Text</td>
+        <td>Action</td>
+</tr>
+    </th>  
+<tbody>
+  {% for filepair in filepairs %}
+	<tr>
+	  <td>{{filepair[0]}}</td>
+	  <td>{{filepair[0]}}</td>
+	  <td>{{filepair[1]}}</td>
+	  <td>  text </td>
+  </tr>
+  {% endfor %}
+</tbody>
+</table>		
+		
+        </div>
+      </div>    
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="../static/js/scripts.js"></script>
+{% endblock %}

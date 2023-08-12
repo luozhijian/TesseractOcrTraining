@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block body %}
+{% include "navbar.html" %}
+<title>Tessaract OCR Training</title>
+<section class="hero is-primary is-bold is-small">
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      <div id="settings" class="settings-box">
+        <div class="settings-area">    
+          <h1 class="title">Results</h1>   
+
+
+		  
+ 		<table style="margin-left: 20px;">
+<!-- Table headers -->
+    <th>
+        <tr style="color: silver; ">    
+        <td>Result</td>
+</tr>
+    </th>  
+<tbody>
+  {% for result in results %}
+	<tr>
+	  <td>{{result}}</td>
+	</tr>
+  {% endfor %}
+</tbody>
+</table>
+        </div>
+      </div>    
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="../static/js/scripts.js"></script>
+{% endblock %}
