@@ -35,6 +35,9 @@ def get_user():
     with session_scope() as s:
         user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
         return user
+def get_username():
+    username = session['username']
+    return username
 
 
 def add_user(username, password, email):
@@ -71,6 +74,12 @@ def username_taken(username):
     with session_scope() as s:
         return s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
 
+def generate_image_folder(username ) :
+    return os.path.join(root_path, username) 
+
+def generate_result_folder(username ) :
+    return os.path.join(root_path, username, 'results') 
+
 def create_folder_if_not_exists(path_name) :
     #If folder doesn't exist, then create it
     if not os.path.isdir(path_name):
@@ -80,7 +89,7 @@ def create_folder_if_not_exists(path_name) :
 
 def list_folder_image_text_pair(username) :
     global root_path 
-    final_path = os.path.join(root_path, username)
+    final_path = generate_image_folder(username)
     create_folder_if_not_exists(final_path)
     list_of_files = os.listdir(final_path)
     if list_of_files is None :
@@ -97,14 +106,16 @@ def list_folder_image_text_pair(username) :
         if one_file_lower.endswith('tif') or one_file_lower.endswith('png') :
             text_filename = one_file_lower +'.gt.txt'
             if text_filename in hash_set :
-                result.append( (one_file, hash_set[text_filename]) )
+                full_text_filename = os.path.join(final_path, text_filename)
+                text_content = open(full_text_filename, 'r').read()
+                result.append( (one_file, hash_set[text_filename], text_content) )
             else :
-                result.append( (one_file, '') )
+                result.append( (one_file, '', '') )
     return result
    
 def list_folder_result(username) :
     global root_path 
-    final_path = os.path.join(root_path, username, 'results')
+    final_path = generate_result_folder(username)
     create_folder_if_not_exists(final_path)
     list_of_files = os.listdir(final_path)
     if list_of_files is None :
@@ -113,7 +124,7 @@ def list_folder_result(username) :
     return list_of_files
     
 
-def save_image_file(username, fileitem)
+def save_image_file(username, fileitem) :
     # check if the file has been uploaded
     try :
         if fileitem.filename:
@@ -128,13 +139,13 @@ def save_image_file(username, fileitem)
             final_filename = os.path.join(root_path, username, final_filename)
            # open read and write the file into the server
             if need_convert_image_file :
-                im = Image.open(fileitem.file)
+                im = Image.open(fileitem)
                 im.save(final_filename)
             else :
                 open(final_filename, 'wb').write(fileitem.file.read())
-        return
+        return  final_filename + ' saved'
     except   Exception as e :
-        return e
+        raise e
 
 # return all current tesseract train data to begin with            
 def get_all_template(username ) :
@@ -153,3 +164,19 @@ def start_training_process(template) :
     if list_of_files is None :
         list_of_files=[]
     list_of_files.sort()
+    
+def save_image_text(username, image_filename, image_text) :
+    final_path = os.path.join(root_path, username, image_filename + '.gt.txt')
+    if not image_text : 
+        if os.path.exists(final_path):
+            os.remove(final_path)
+    else :
+        open(final_path, 'w').write(image_text)
+ 
+def read_image_text(username, image_filename ) : 
+    final_path = os.path.join(root_path, username, image_filename + '.gt.txt')
+
+    if os.path.exists(final_path):
+        text= open(final_path, 'r').read()
+        return text
+    return ''    #return empty instead of None

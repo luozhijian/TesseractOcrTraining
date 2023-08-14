@@ -10,9 +10,12 @@
           <h1 class="title">Images</h1>      
 		  
 		  <form id="uploadbanner" enctype="multipart/form-data" method="post" action="/upload">
-   <input id="fileupload" name="myfile" type="file" />
+   <input id="fileupload" name="fileupload" type="file" />
    <input type="submit" value="submit" id="submit" />
 </form>
+<br/>
+
+       <h2>  {{ error }}  </h2> 
 <br/>
 
 		<table style="margin-left: 20px;">
@@ -29,9 +32,9 @@
   {% for filepair in filepairs %}
 	<tr>
 	  <td>{{filepair[0]}}</td>
-	  <td>{{filepair[0]}}</td>
 	  <td>{{filepair[1]}}</td>
-	  <td>  text </td>
+	  <td>{{filepair[2]}}</td>
+	  <td> <a href="/imageedit?file={{filepair[0]}}">Edit </a> </td>
   </tr>
   {% endfor %}
 </tbody>

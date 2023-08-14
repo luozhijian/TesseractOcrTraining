@@ -7,23 +7,19 @@
     <div class="container has-text-centered">
       <div id="settings" class="settings-box">
         <div class="settings-area">    
-          <h1 class="title">Training</h1>   
-
-	  <form action="/start_training"  method="POST">
- <label for="language">Select a template to start with:</label>
-<select name="template" id="template">
-  {% for template in templates %}
- 
- <option value="{{template}}">{{template}}</option> 
-
- {% endfor %}
-
-</select>
-
-
-<input type="submit" value="Submit">
+          <h1 class="title">Edit image text</h1>   
+ 		  
+<form action="/savetext?image={{image_path}}" method="POST">
+  <label for="hints">Text for Image:</label>
+  <input type="text" id="imagetext" name="imagetext"  value="{{current_text}}"  size="50" /> 
+  <br>
+   <input type="submit" value="Submit">
+   <br>
+   <img class="center" src="/imagefiles/{{image_path}}" alt="{{image_path}}"  />
+  
 
 </form>
+			
 
  
         </div>

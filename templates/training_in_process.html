@@ -7,23 +7,21 @@
     <div class="container has-text-centered">
       <div id="settings" class="settings-box">
         <div class="settings-area">    
-          <h1 class="title">Training</h1>   
+          <h1 class="title">Training in process </h1>   
+ 		  
+<pre id="output"></pre>
+<script>
+    var output = document.getElementById('output');
 
-	  <form action="/start_training"  method="POST">
- <label for="language">Select a template to start with:</label>
-<select name="template" id="template">
-  {% for template in templates %}
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '{{ url_for('stream') }}');
+    xhr.send();
+
+    setInterval(function() {
+        output.textContent = xhr.responseText;
+    }, 1000);
+</script>
  
- <option value="{{template}}">{{template}}</option> 
-
- {% endfor %}
-
-</select>
-
-
-<input type="submit" value="Submit">
-
-</form>
 
  
         </div>

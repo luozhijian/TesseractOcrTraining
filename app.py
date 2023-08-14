@@ -3,7 +3,7 @@
 from scripts import tabledef
 from scripts import forms
 from scripts import helpers
-from flask import Flask, redirect, url_for, render_template, request, session
+from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory
 import json
 import sys
 import os
@@ -85,6 +85,25 @@ def images():
         filepairs = helpers.list_folder_image_text_pair(user.username )
         return render_template('images.html', user=user, filepairs = filepairs)
     return redirect(url_for('login'))
+    
+    
+@app.route('/imagefiles/<name>')
+def imagefiles(name):
+    print('imagefile%s'%name)
+    if session.get('logged_in'):
+        username = helpers.get_username()
+        return send_from_directory(helpers.generate_image_folder(username), name)
+    return redirect(url_for('login'))
+        
+@app.route('/resultfiles/<name>')
+def resultfiles(name):
+    print('imagefile%s'%name)
+    if session.get('logged_in'):
+        username = helpers.get_username()
+        return send_from_directory(helpers.generate_result_folder(username), name)
+    return redirect(url_for('login'))
+        
+        
 
 # -------- images --------------- #
 @app.route('/results', methods=['GET', 'POST'])
@@ -99,13 +118,14 @@ def results():
     
 # -------- upload image --------------- #
 @app.route('/upload', methods=['POST'])
-def results():
+def upload():
     if session.get('logged_in'):
         user = helpers.get_user()
-        fileitem = request.form['filename']
+        fileitem = request.files['fileupload']
          
         e = helpers.save_image_file(user.username, fileitem)
-        return render_template('results.html', results=results)
+        return results()
+
     return redirect(url_for('login'))
     
 
@@ -127,10 +147,49 @@ def start_training():
         user = helpers.get_user()
         start_template = request.form['template']
          
-        return render_template('training.html', start_template=start_template)
+        return render_template('training_in_process.html', start_template=start_template)
     return redirect(url_for('login'))    
 
 
+
+@app.route('/stream')
+def stream():
+    if session.get('logged_in'):
+        def generate():
+            with open('job.log') as f:
+                while True:
+                    yield f.read()
+                    sleep(1)
+
+        return app.response_class(generate(), mimetype='text/plain')
+    return redirect(url_for('login'))    
+    
+@app.route('/imageedit', methods=['GET'])
+def imageedit():
+    if session.get('logged_in'):
+        filename = request.args.get("file")
+        user = helpers.get_user()
+        #image_full_path_url = './files/' + user.username + '/' + filename
+        image_full_path_url = filename
+        #print(filename)
+        current_text = helpers.read_image_text(user.username, filename)
+        return render_template('imageedit.html', image_full_path=image_full_path_url
+                , image_path=filename, current_text=current_text)
+    return redirect(url_for('login'))    
+
+
+@app.route('/savetext', methods=['GET', 'POST' ])
+def savetext():
+    if session.get('logged_in'):
+        imagefilename = request.args.get("image")
+        user = helpers.get_user()
+        imagetext = request.form['imagetext'] 
+        helpers.save_image_text(user.username, imagefilename, imagetext)
+        return results()
+    return redirect(url_for('login'))    
+
+
+    
 # ======== Main ================================= #
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=True, host="0.0.0.0")
