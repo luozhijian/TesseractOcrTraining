@@ -8,9 +8,14 @@ from requests.structures import CaseInsensitiveDict
 import bcrypt
 import os
 from PIL import Image
+from datetime import datetime
+import time
+from threading import Thread
+
 
 root_path ='C:/Luo/Repos/TesseractOcrTraining/files'
-
+training_in_process = False
+current_log_name =None
 @contextmanager
 def session_scope():
     """Provide a transactional scope around a series of operations."""
@@ -35,6 +40,8 @@ def get_user():
     with session_scope() as s:
         user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
         return user
+        
+        
 def get_username():
     username = session['username']
     return username
@@ -79,6 +86,13 @@ def generate_image_folder(username ) :
 
 def generate_result_folder(username ) :
     return os.path.join(root_path, username, 'results') 
+
+def get_current_log_name(username ) :
+    if current_log_name :
+        if username in current_log_name : 
+            return current_log_name
+    
+    
 
 def create_folder_if_not_exists(path_name) :
     #If folder doesn't exist, then create it
@@ -157,13 +171,34 @@ def get_all_template(username ) :
     list_of_files.sort()
     return list_of_files
     
-def start_training_process(template) :
+def start_training_process(username, template) :
+    training_in_process =True
+    log_filename =''
     template_path =  os.path.join(root_path, '../template')
-    final_filename= os.path.join(template_path, template)
+    final_templatename= os.path.join(template_path, template)
+    image_folder  = generate_image_folder(username)
+    
+    processThread = Thread(target=start_training_action, args=(username, final_templatename, image_folder));
+    processThread.start()
  
-    if list_of_files is None :
-        list_of_files=[]
-    list_of_files.sort()
+    
+    
+def start_training_action(username, templatename, image_folder) :
+    global current_log_name,training_in_process
+    try :
+        log_folder = os.path.join(image_folder, 'log')
+        log_filename = 'log_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
+        current_log_name = os.path.join(log_folder, log_filename +'.log')
+        print (current_log_name)
+        with open(current_log_name, 'a') as the_file:
+            for index in range(200): 
+                the_file.write(datetime.utcnow().strftime('%Y%m%d_%H%M%S%f') +'\n')
+                the_file.flush()
+                time.sleep(1.5)
+    except Exception as e:
+        print (e)
+    finally :
+        training_in_process =False 
     
 def save_image_text(username, image_filename, image_text) :
     final_path = os.path.join(root_path, username, image_filename + '.gt.txt')

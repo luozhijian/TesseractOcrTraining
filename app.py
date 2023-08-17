@@ -3,10 +3,12 @@
 from scripts import tabledef
 from scripts import forms
 from scripts import helpers
-from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory
+from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, Response
+from pygtail import Pygtail
 import json
 import sys
 import os
+import time
 
 app = Flask(__name__)
 app.secret_key = os.urandom(12)  # Generic key for dev purposes only
@@ -145,8 +147,8 @@ def training():
 def start_training():
     if session.get('logged_in'):
         user = helpers.get_user()
-        start_template = request.form['template']
-         
+        start_template = request.form['templatename']
+        helpers.start_training_process(user.username, start_template)
         return render_template('training_in_process.html', start_template=start_template)
     return redirect(url_for('login'))    
 
@@ -154,14 +156,24 @@ def start_training():
 
 @app.route('/stream')
 def stream():
+ 
     if session.get('logged_in'):
+        username = helpers.get_username()
         def generate():
-            with open('job.log') as f:
-                while True:
-                    yield f.read()
-                    sleep(1)
+            logfilename= helpers.get_current_log_name(username)
+            print (username  + '  ' + logfilename)
+            
+            if not logfilename :
+                yield 'cannot find log file' + "\n\n" + "\n\n"
+                yield 'close' + "\n\n" + "\n\n"
+                return
+            for line in Pygtail(logfilename ):
+                print (line)
+                yield "data:" + str(line)  + "\n\n" + "\n\n"
+                time.sleep(0.1)
+            yield 'close' + "\n\n" + "\n\n"
 
-        return app.response_class(generate(), mimetype='text/plain')
+        return Response(generate(), mimetype= 'text/event-stream')
     return redirect(url_for('login'))    
     
 @app.route('/imageedit', methods=['GET'])

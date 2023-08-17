@@ -9,18 +9,24 @@
         <div class="settings-area">    
           <h1 class="title">Training in process </h1>   
  		  
-<pre id="output"></pre>
-<script>
-    var output = document.getElementById('output');
+		  <h2>Start from {{start_template}} </h2>
+		  <br>
+    <div>
+	<ul id="display_list">
+				</ul>
+				
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', '{{ url_for('stream') }}');
-    xhr.send();
-
-    setInterval(function() {
-        output.textContent = xhr.responseText;
-    }, 1000);
-</script>
+<script type="text/javascript">
+	var source = new EventSource("/stream");
+	source.onmessage = function(event) {
+		// $('#display').prepend(event.data);
+		$('#display_list').prepend('<li>'+event.data+'</li>');
+		if(event.data == "close"){
+			source.close()
+		}
+	}
+	</script>
+    </div>
  
 
  
@@ -29,6 +35,9 @@
     </div>
   </div>
 </section>
+
+ 
+
 {% endblock %}
 {% block scripts %}
 <script src="../static/js/scripts.js"></script>

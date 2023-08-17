@@ -10,8 +10,10 @@
           <h1 class="title">Training</h1>   
 
 	  <form action="/start_training"  method="POST">
+	  
  <label for="language">Select a template to start with:</label>
-<select name="template" id="template">
+<select name="templatename" id="templatename">
+<option value="empty">empty</option> 
   {% for template in templates %}
  
  <option value="{{template}}">{{template}}</option> 
