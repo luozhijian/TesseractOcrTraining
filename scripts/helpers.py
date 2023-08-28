@@ -13,7 +13,7 @@ import time
 from threading import Thread
 
 
-root_path ='C:/Luo/Repos/TesseractOcrTraining/files'
+root_path ='/var/www/tesseracttraining/files'
 training_in_process = False
 current_log_name =None
 @contextmanager
