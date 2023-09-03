@@ -92,8 +92,15 @@ def get_current_log_name(username ) :
         if username in current_log_name : 
             return current_log_name
     
+def get_txtfilename_from_image (username, image_filename) :
+    image_filename_without_extension = image_filename[:-4]
+    final_path = os.path.join(root_path, username, image_filename_without_extension + '.gt.txt')
+    return final_path
     
-
+def get_txtfilename_only_from_image (image_filename) :
+    image_filename_gt = image_filename[:-4] + '.gt.txt'
+    return image_filename_gt
+      
 def create_folder_if_not_exists(path_name) :
     #If folder doesn't exist, then create it
     if not os.path.isdir(path_name):
@@ -118,7 +125,7 @@ def list_folder_image_text_pair(username) :
             continue 
         one_file_lower = one_file.lower()
         if one_file_lower.endswith('tif') or one_file_lower.endswith('png') :
-            text_filename = one_file_lower +'.gt.txt'
+            text_filename = get_txtfilename_only_from_image(one_file)
             if text_filename in hash_set :
                 full_text_filename = os.path.join(final_path, text_filename)
                 text_content = open(full_text_filename, 'r').read()
@@ -156,7 +163,7 @@ def save_image_file(username, fileitem) :
                 im = Image.open(fileitem)
                 im.save(final_filename)
             else :
-                open(final_filename, 'wb').write(fileitem.file.read())
+                open(final_filename, 'wb').write(fileitem.read())
         return  final_filename + ' saved'
     except   Exception as e :
         raise e
@@ -199,9 +206,10 @@ def start_training_action(username, templatename, image_folder) :
         print (e)
     finally :
         training_in_process =False 
+        
     
 def save_image_text(username, image_filename, image_text) :
-    final_path = os.path.join(root_path, username, image_filename + '.gt.txt')
+    final_path = get_txtfilename_from_image(username, image_filename)
     if not image_text : 
         if os.path.exists(final_path):
             os.remove(final_path)
@@ -209,7 +217,7 @@ def save_image_text(username, image_filename, image_text) :
         open(final_path, 'w').write(image_text)
  
 def read_image_text(username, image_filename ) : 
-    final_path = os.path.join(root_path, username, image_filename + '.gt.txt')
+    final_path = get_txtfilename_from_image(username, image_filename)
 
     if os.path.exists(final_path):
         text= open(final_path, 'r').read()

@@ -28,6 +28,7 @@ def login():
                 if helpers.credentials_valid(username, password):
                     session['logged_in'] = True
                     session['username'] = username
+                    # return results()
                     return json.dumps({'status': 'Login successful'})
                 return json.dumps({'status': 'Invalid user/pass'})
             return json.dumps({'status': 'Both fields required'})
@@ -123,10 +124,14 @@ def results():
 def upload():
     if session.get('logged_in'):
         user = helpers.get_user()
-        fileitem = request.files['fileupload']
-         
-        e = helpers.save_image_file(user.username, fileitem)
-        return results()
+        
+        files = request.files.getlist("fileupload")
+        
+        # fileitem = request.files['fileupload']
+        for file in files:
+            e = helpers.save_image_file(user.username, file)
+            
+        return images()
 
     return redirect(url_for('login'))
     

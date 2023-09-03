@@ -1,30 +1,58 @@
 {% extends "base.html" %}
 {% block body %}
 {% include "navbar.html" %}
+<style>
+table, td, th {
+  border: 1px solid black;
+}
+
+table {
+  border-collapse: collapse;
+  width: 90%;
+  min-width:800px;
+  margin: 0 auto;
+  align: left;
+  
+}
+form {
+margin: 0 auto; 
+text-align: left;
+  min-width:700px;
+ }
+</style>
+
 <title>Tessaract OCR Training</title>
 <section class="hero is-primary is-bold is-small">
   <div class="hero-body">
     <div class="container has-text-centered">
       <div id="settings" class="settings-box">
         <div class="settings-area">    
-          <h1 class="title">Images</h1>      
+			<h1 class="title">Images</h1>      
 		  
-		  <form id="uploadbanner" enctype="multipart/form-data" method="post" action="/upload">
-   <input id="fileupload" name="fileupload" type="file" />
-   <input type="submit" value="submit" id="submit" />
-</form>
-<br/>
+			<form id="uploadbanner" enctype="multipart/form-data" method="post" action="/upload"   > 
+				<div style="float:left;">  
+					<input id="fileupload" name="fileupload" type="file" multiple />
+					<input type="submit" value="submit" id="submit" />
+			</div>
+		</form>
 
        <h2>  {{ error }}  </h2> 
-<br/>
+	<br/>
 
-		<table style="margin-left: 20px;">
+
+		
+        </div>
+      </div>    
+    </div>
+  </div>
+  
+ <table  >
 <!-- Table headers -->
     <th>
-        <tr style="color: silver; margin-left: 10px ">    
+        <tr style="color: silver; ">    
         <td>Image</td>
-        <td>TextFile</td>
-        <td>Text</td>
+        <td >TextFile</td>
+        <td >Text</td>
         <td>Action</td>
 </tr>
     </th>  
@@ -39,11 +67,7 @@
   {% endfor %}
 </tbody>
 </table>		
-		
-        </div>
-      </div>    
-    </div>
-  </div>
+
 </section>
 {% endblock %}
 {% block scripts %}
