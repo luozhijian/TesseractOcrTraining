@@ -158,7 +158,6 @@ def start_training():
     return redirect(url_for('login'))    
 
 
-
 @app.route('/stream')
 def stream():
  
@@ -181,6 +180,7 @@ def stream():
         return Response(generate(), mimetype= 'text/event-stream')
     return redirect(url_for('login'))    
     
+
 @app.route('/imageedit', methods=['GET'])
 def imageedit():
     if session.get('logged_in'):
@@ -200,9 +200,15 @@ def savetext():
     if session.get('logged_in'):
         imagefilename = request.args.get("image")
         user = helpers.get_user()
-        imagetext = request.form['imagetext'] 
-        helpers.save_image_text(user.username, imagefilename, imagetext)
-        return results()
+        action =request.form['action'] 
+        if action == 'Submit' :
+            imagetext = request.form['imagetext'] 
+            helpers.save_image_text(user.username, imagefilename, imagetext)
+        elif action == 'Delete' :
+            helpers.delete_one_image_file(user.username, imagefilename);
+        
+        return images()
+        
     return redirect(url_for('login'))    
 
 

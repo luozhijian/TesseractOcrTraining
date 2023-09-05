@@ -1,35 +1,67 @@
 {% extends "base.html" %}
 {% block body %}
 {% include "navbar.html" %}
+
+
 <title>Tessaract OCR Training</title>
 <section class="hero is-primary is-bold is-small">
-  <div class="hero-body">
+  <div class="hero-body" min-width="600px">
     <div class="container has-text-centered">
-      <div id="settings" class="settings-box">
-        <div class="settings-area">    
+
           <h1 class="title">Training</h1>   
+		  
+		  <text>It uses command from: https://github.com/tesseract-ocr/tesstrain </text>
 
-	  <form action="/start_training"  method="POST">
-	  
- <label for="language">Select a template to start with:</label>
-<select name="templatename" id="templatename">
-<option value="empty">empty</option> 
-  {% for template in templates %}
- 
- <option value="{{template}}">{{template}}</option> 
+<form action="/start_training"  method="POST" >
 
- {% endfor %}
+	<script>
 
-</select>
+		  function confirm_training() {
+				var model_name= document.getElementById("model_name").value.trim();
+				if (model_name.length <=1 ) {
+					alert("please input a validate model name");
+					return false;
+				}
+				var more_parameters =document.getElementById("more_parameters").value.trim();
+				var message1 =  'Command will be like following, Continue?\n make training START_MODEL=' + model_name + ' ' + more_parameters;
+				return confirm(message1);
+		  }
+	</script>
 
+	<div style="float:left;">    
+		<label for="language">Select a template to start with:</label>
+		<select name="templatename" id="templatename">
+			<option value="empty">empty</option> 
+			{% for template in templates %}
+				<option value="{{template}}">{{template}}</option> 
+			{% endfor %}
 
-<input type="submit" value="Submit">
+		</select>
+	</div>
+	<br>
+	<div style="clear: both;"></div>
+	<div style="float:left;">    
+		<label for="model_name">Model Name:</label>
+		<input type="text" id="model_name" name="model_name" minlength="1">
+	</div>
+	<br>
+	<div style="clear: both;"></div>
+	<div style="float:left;">    
+		<label for="more_parameters" >Additional Options:</label>
+		<input type="text" id="more_parameters" name="more_parameters" size ="100" >
+	</div>
+	<br>
+	<div style="clear: both;"></div>
+	<div style="float:center;">
+		<input type="submit" value="Submit" onclick="return confirm_training()">
+	</div>
 
 </form>
 
  
-        </div>
-      </div>    
+<br><br> <br> <text>I cannot get START_MODEL to work in make training START_MODEL. so, this will be ignored</text>
+
+  
     </div>
   </div>
 </section>

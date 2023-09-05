@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from requests.structures import CaseInsensitiveDict
 import bcrypt
 import os
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from datetime import datetime
 import time
 from threading import Thread
@@ -83,6 +83,9 @@ def username_taken(username):
 
 def generate_image_folder(username ) :
     return os.path.join(root_path, username) 
+
+def generate_image_fullpath(username, image_filename ) :
+    return os.path.join(root_path, username, image_filename) 
 
 def generate_result_folder(username ) :
     return os.path.join(root_path, username, 'results') 
@@ -160,8 +163,12 @@ def save_image_file(username, fileitem) :
             final_filename = os.path.join(root_path, username, final_filename)
            # open read and write the file into the server
             if need_convert_image_file :
-                im = Image.open(fileitem)
-                im.save(final_filename)
+                try :
+                    im = Image.open(fileitem)
+                    im.save(final_filename)
+                except UnidentifiedImageError :
+                    open(final_filename, 'wb').write(fileitem.read())
+                
             else :
                 open(final_filename, 'wb').write(fileitem.read())
         return  final_filename + ' saved'
@@ -223,3 +230,11 @@ def read_image_text(username, image_filename ) :
         text= open(final_path, 'r').read()
         return text
     return ''    #return empty instead of None
+
+def delete_one_image_file(username, image_filename) :
+    final_path = generate_image_fullpath(username, image_filename)
+    if os.path.exists(final_path):
+        os.remove(final_path)
+    final_path = get_txtfilename_from_image(username, image_filename)
+    if os.path.exists(final_path):
+        os.remove(final_path)

@@ -13,15 +13,14 @@
   <label for="hints">Text for Image:</label>
   <input type="text" id="imagetext" name="imagetext"  value="{{current_text}}"  size="50" /> 
   <br>
-   <input type="submit" value="Submit">
+   <input type="submit" name="action" value="Submit">
    <br>
    <img class="center" src="/imagefiles/{{image_path}}" alt="{{image_path}}"  />
-  
+   <br>
+   <input type="submit" name="action" value="Delete" onclick="return confirm('Are you sure to delete?')">
 
 </form>
 			
-
- 
         </div>
       </div>    
     </div>
