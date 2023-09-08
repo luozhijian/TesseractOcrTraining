@@ -236,14 +236,17 @@ def savetext():
 
     
 # ======== Main ================================= #
-if __name__ == "__main__":
-    logger = logging.getLogger('MainProgram')
-    file_handler = logging.handlers.RotatingFileHandler('/var/log/tesseracttraining/tesseracttraining.log', maxBytes=2000000, backupCount=50)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
+# if __name__ == "__main__":
+logger = logging.getLogger('MainProgram')
+file_handler = logging.handlers.RotatingFileHandler('/var/log/tesseracttraining/tesseracttraining.log', maxBytes=2000000, backupCount=50)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
 
-    file_handler.setLevel(logging.INFO)
-    logger.addHandler(file_handler)
-    logger.setLevel(logging.INFO)
-    helpers.logger = logger
-    app.run(debug=True, use_reloader=True, host="0.0.0.0")
+file_handler.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
+helpers.logger = logger
+    # app.run(debug=True, use_reloader=True, host="0.0.0.0")
+    
+server=  wsgi.WSGIServer(('0.0.0.0'), app, log=logger)
+server.serve_forever()
