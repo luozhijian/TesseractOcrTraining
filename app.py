@@ -41,16 +41,19 @@ def handle_exception(e):
 def login():
     if not session.get('logged_in'):
         form = forms.LoginForm(request.form)
-        if request.method == 'POST':
-            username = request.form['username'].lower()
-            password = request.form['password']
-            if form.validate():
-                if helpers.credentials_valid(username, password):
-                    session['logged_in'] = True
-                    session['username'] = username
-                    return json.dumps({'status': 'Login successful'})
-                return json.dumps({'status': 'Invalid user/pass'})
-            return json.dumps({'status': 'Both fields required'})
+        try :
+            if request.method == 'POST':
+                username = request.form['username'].lower()
+                password = request.form['password']
+                if form.validate():
+                    if helpers.credentials_valid(username, password):
+                        session['logged_in'] = True
+                        session['username'] = username
+                        return json.dumps({'status': 'Login successful'})
+                    return json.dumps({'status': 'Invalid user/pass'})
+                return json.dumps({'status': 'Both fields required'})
+        except :
+            pass #eat the error
         return render_template('login.html', form=form)
     user = helpers.get_user()
     logger.info('%s login'%user.username)
@@ -233,10 +236,6 @@ def savetext():
         
     return redirect(url_for('login'))    
 
-
-    
-# ======== Main ================================= #
-# if __name__ == "__main__":
 logger = logging.getLogger('MainProgram')
 file_handler = logging.handlers.RotatingFileHandler('/var/log/tesseracttraining/tesseracttraining.log', maxBytes=2000000, backupCount=50)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -246,7 +245,10 @@ file_handler.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 helpers.logger = logger
-    # app.run(debug=True, use_reloader=True, host="0.0.0.0")
     
-server=  wsgi.WSGIServer(('0.0.0.0'), app, log=logger)
-server.serve_forever()
+# ======== Main ================================= #
+if __name__ == "__main__":
+
+    app.run(debug=True, use_reloader=True, host="0.0.0.0")
+    
+
