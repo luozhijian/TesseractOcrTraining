@@ -9,12 +9,32 @@ import json
 import sys
 import os
 import time
+import logging
+import logging.handlers
+
+from werkzeug.exceptions import HTTPException
+
 
 app = Flask(__name__)
 app.secret_key = os.urandom(12)  # Generic key for dev purposes only
-
+logger =None 
  
 #  most code is from Flaskex
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+
+    if logger :
+        logger.exception(e)
+    # pass through HTTP errors
+    if isinstance(e, HTTPException):
+        return e
+
+    # now you're handling non-HTTP exceptions only
+    return render_template("500_generic.html", e=e), 500
+    
+    
 # ======== Routing =  #
 # -------- Login ----- #
 @app.route('/', methods=['GET', 'POST'])
@@ -28,13 +48,14 @@ def login():
                 if helpers.credentials_valid(username, password):
                     session['logged_in'] = True
                     session['username'] = username
-                    # return results()
                     return json.dumps({'status': 'Login successful'})
                 return json.dumps({'status': 'Invalid user/pass'})
             return json.dumps({'status': 'Both fields required'})
         return render_template('login.html', form=form)
     user = helpers.get_user()
-    return render_template('home.html', user=user)
+    logger.info('%s login'%user.username)
+    return images()
+    # return render_template('home.html', user=user)
 
 
 @app.route("/logout")
@@ -57,6 +78,7 @@ def signup():
                     helpers.add_user(username, password, email)
                     session['logged_in'] = True
                     session['username'] = username
+                    logger.info('%s %s signup'% (username,email) )
                     return json.dumps({'status': 'Signup successful'})
                 return json.dumps({'status': 'Username taken'})
             return json.dumps({'status': 'User/Pass required'})
@@ -215,4 +237,14 @@ def savetext():
     
 # ======== Main ================================= #
 if __name__ == "__main__":
+
+    file_handler = logging.handlers.RotatingFileHandler('/var/log/tesseracttraining/tesseracttraining.log', maxBytes=2000000, backupCount=50)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+
+    file_handler.setLevel(logging.INFO)
+    logger = app.logger
+    logger.addHandler(file_handler)
+    logger.setLevel(logging.INFO)
+    helpers.logger = logger
     app.run(debug=True, use_reloader=True, host="0.0.0.0")

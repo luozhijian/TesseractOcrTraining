@@ -16,6 +16,9 @@ from threading import Thread
 root_path ='/var/www/tesseracttraining/files'
 training_in_process = False
 current_log_name =None
+
+logger =None
+
 @contextmanager
 def session_scope():
     """Provide a transactional scope around a series of operations."""
@@ -115,11 +118,17 @@ def list_folder_image_text_pair(username) :
     global root_path 
     final_path = generate_image_folder(username)
     create_folder_if_not_exists(final_path)
-    list_of_files = os.listdir(final_path)
-    if list_of_files is None :
-        list_of_files=[]
-    else :
-        list_of_files.sort()
+    list_of_files_1 = os.listdir(final_path)    
+    if list_of_files_1 is None :
+        list_of_files_1=[]
+    list_of_files =[]
+    
+    for fname in list_of_files_1 :
+        path = os.path.join(final_path, fname)
+        if not os.path.isdir(path):
+            list_of_files.append(fname)
+        
+    list_of_files.sort()
     
     hash_set = {v.lower():v for v in list_of_files }
     result =[]
@@ -135,6 +144,9 @@ def list_folder_image_text_pair(username) :
                 result.append( (one_file, hash_set[text_filename], text_content) )
             else :
                 result.append( (one_file, '', '') )
+        elif  not one_file_lower.endswith('.gt.txt'):
+            result.append( (one_file, '', '') )
+            
     return result
    
 def list_folder_result(username) :
@@ -167,11 +179,14 @@ def save_image_file(username, fileitem) :
                     im = Image.open(fileitem)
                     im.save(final_filename)
                 except UnidentifiedImageError :
+                    final_filename = final_filename[:-4]
                     open(final_filename, 'wb').write(fileitem.read())
                 
             else :
                 open(final_filename, 'wb').write(fileitem.read())
-        return  final_filename + ' saved'
+        temp_messgage =  final_filename + ' saved'
+        logger.info(temp_messgage)
+        return temp_messgage
     except   Exception as e :
         raise e
 
@@ -204,6 +219,7 @@ def start_training_action(username, templatename, image_folder) :
         log_filename = 'log_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
         current_log_name = os.path.join(log_folder, log_filename +'.log')
         print (current_log_name)
+        logger.info(current_log_name)
         with open(current_log_name, 'a') as the_file:
             for index in range(200): 
                 the_file.write(datetime.utcnow().strftime('%Y%m%d_%H%M%S%f') +'\n')
@@ -233,6 +249,7 @@ def read_image_text(username, image_filename ) :
 
 def delete_one_image_file(username, image_filename) :
     final_path = generate_image_fullpath(username, image_filename)
+    logger.info('remove file: ' + final_path)
     if os.path.exists(final_path):
         os.remove(final_path)
     final_path = get_txtfilename_from_image(username, image_filename)
