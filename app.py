@@ -237,13 +237,12 @@ def savetext():
     
 # ======== Main ================================= #
 if __name__ == "__main__":
-
+    logger = logging.getLogger('MainProgram')
     file_handler = logging.handlers.RotatingFileHandler('/var/log/tesseracttraining/tesseracttraining.log', maxBytes=2000000, backupCount=50)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
 
     file_handler.setLevel(logging.INFO)
-    logger = app.logger
     logger.addHandler(file_handler)
     logger.setLevel(logging.INFO)
     helpers.logger = logger
