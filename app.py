@@ -11,6 +11,7 @@ import os
 import time
 import logging
 import logging.handlers
+import subprocess
 
 from werkzeug.exceptions import HTTPException
 
@@ -178,8 +179,13 @@ def start_training():
     if session.get('logged_in'):
         user = helpers.get_user()
         start_template = request.form['templatename']
-        helpers.start_training_process(user.username, start_template)
-        return render_template('training_in_process.html', start_template=start_template)
+        model_name = request.form['model_name']
+        more_parameters = request.form['more_parameters']
+#        helpers.start_training_process(user.username, start_template)
+        session["start_template"]=start_template
+        session["model_name"]=model_name
+        session["more_parameters"]=more_parameters
+        return render_template('training_in_process.html', start_template=model_name)
     return redirect(url_for('login'))    
 
 
@@ -187,21 +193,51 @@ def start_training():
 def stream():
  
     if session.get('logged_in'):
-        username = helpers.get_username()
-        def generate():
-            logfilename= helpers.get_current_log_name(username)
-            print (username  + '  ' + logfilename)
-            
-            if not logfilename :
-                yield 'cannot find log file' + "\n\n" + "\n\n"
-                yield 'close' + "\n\n" + "\n\n"
-                return
-            for line in Pygtail(logfilename ):
-                print (line)
-                yield "data:" + str(line)  + "\n\n" + "\n\n"
-                time.sleep(0.1)
-            yield 'close' + "\n\n" + "\n\n"
+        command_list = None
+        p = None
+        the_file=None
+        try :
+            username = helpers.get_username()
+            start_template =session["start_template"]
+            model_name = session["model_name"]
+            more_parameters =session["more_parameters"]
+            more_parameters = helpers.remove_special_char(more_parameters)
+            if model_name :
+                ground_truth_dir = helpers.generate_image_folder(username)
+                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training START_MODEL=%s GROUND_TRUTH_DIR= %s %s'%(model_name, ground_truth_dir, more_parameters)
+                is_validate_command = True
+                logfilename= helpers.get_current_log_name(username)
+                the_file = open(logfilename, 'a') 
+                if is_validate_command :
+                    # command_list ="dir && ping -t localhost"
+                    p = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
+            else :
+                command_list='empty model name'
+        except Exception as ex:
+                command_list += '\n' + str(ex) 
+                p = None
+        print(command_list)
+        print(command_list)
+        def generate():
+            if the_file :
+                the_file.write(command_list + '\n')
+            yield "data:" + command_list  + "\n\n" + "\n\n"
+            if p :
+                while(True):
+                    line = p.stdout.readline()
+                    if line:
+                        print(line)
+                        line =str(line, "utf-8")
+                        the_file.write(line + "\n")
+                        yield "data:" + line + "\n\n" + "\n\n"
+                    elif not p.poll():
+                        break
+
+            if the_file :
+                the_file.close()
+            yield  "data:" + 'close' + "\n\n" + "\n\n"
+            
         return Response(generate(), mimetype= 'text/event-stream')
     return redirect(url_for('login'))    
     

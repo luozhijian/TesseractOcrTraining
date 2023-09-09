@@ -33,7 +33,6 @@ def session_scope():
     finally:
         s.close()
 
-
 def get_session():
     return sessionmaker(bind=tabledef.engine)()
 
@@ -94,9 +93,15 @@ def generate_result_folder(username ) :
     return os.path.join(root_path, username, 'results') 
 
 def get_current_log_name(username ) :
-    if current_log_name :
-        if username in current_log_name : 
-            return current_log_name
+    log_folder = os.path.join(root_path, username,'log')
+    create_folder_if_not_exists (log_folder)
+    log_filename = 'log_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
+    return os.path.join(log_folder, log_filename +'.log')
+
+def remove_special_char(s ):
+    if not s :
+        return s
+    return ''.join( c for c in s if  ( c.isalnum()  or c in ' /=\t' ) )
     
 def get_txtfilename_from_image (username, image_filename) :
     image_filename_without_extension = image_filename[:-4]
@@ -216,6 +221,7 @@ def start_training_action(username, templatename, image_folder) :
     global current_log_name,training_in_process
     try :
         log_folder = os.path.join(image_folder, 'log')
+        create_folder_if_not_exists (log_folder)
         log_filename = 'log_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
         current_log_name = os.path.join(log_folder, log_filename +'.log')
         print (current_log_name)
