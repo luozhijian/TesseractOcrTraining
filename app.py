@@ -25,9 +25,10 @@ logger =None
 
 @app.errorhandler(Exception)
 def handle_exception(e):
-
+    path = request.path
     if logger :
         logger.exception(e)
+        logger.error('error path:' + path)
     # pass through HTTP errors
     if isinstance(e, HTTPException):
         return e
