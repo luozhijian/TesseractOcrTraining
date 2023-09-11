@@ -21,7 +21,7 @@
 <tbody>
   {% for result in results %}
 	<tr>
-	  <td> <a href="/resultfiles/{{result}}" download> {{result}}  </a></td>
+	  <td> <a href="/resultfiles/{{ result[2] }}?path={{ result[0] }}" download>{{ result[1] }}</a></td>
 	</tr>
   {% endfor %}
 </tbody>

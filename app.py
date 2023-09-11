@@ -12,7 +12,7 @@ import time
 import logging
 import logging.handlers
 import subprocess
-
+import urllib.parse
 from werkzeug.exceptions import HTTPException
 
 
@@ -118,7 +118,7 @@ def images():
     
 @app.route('/imagefiles/<name>')
 def imagefiles(name):
-    print('imagefile%s'%name)
+    # print('imagefile%s'%name)
     if session.get('logged_in'):
         username = helpers.get_username()
         return send_from_directory(helpers.generate_image_folder(username), name)
@@ -126,10 +126,15 @@ def imagefiles(name):
         
 @app.route('/resultfiles/<name>')
 def resultfiles(name):
-    print('imagefile%s'%name)
+    # print('result: %s'%name)
     if session.get('logged_in'):
         username = helpers.get_username()
-        return send_from_directory(helpers.generate_result_folder(username), name)
+        result_folder = helpers.generate_result_folder(username)
+        file_path = request.args.get("path")
+        name_file_path = urllib.parse.unquote_plus(file_path)
+        real_folder = os.path.join( result_folder, name_file_path)
+        print ('%s    %s'%(real_folder, name) )
+        return send_from_directory(real_folder, name)
     return redirect(url_for('login'))
         
         
@@ -204,7 +209,7 @@ def stream():
             more_parameters = helpers.remove_special_char(more_parameters)
             if model_name :
                 ground_truth_dir = helpers.generate_image_folder(username)
-                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training START_MODEL=%s GROUND_TRUTH_DIR= %s %s'%(model_name, ground_truth_dir, more_parameters)
+                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR= %s %s'%(model_name, ground_truth_dir, more_parameters)
                 is_validate_command = True
                 logfilename= helpers.get_current_log_name(username)
                 the_file = open(logfilename, 'a') 
@@ -217,7 +222,6 @@ def stream():
         except Exception as ex:
                 command_list += '\n' + str(ex) 
                 p = None
-        print(command_list)
         print(command_list)
         def generate():
             if the_file :
@@ -233,6 +237,7 @@ def stream():
                         yield "data:" + line + "\n\n" + "\n\n"
                     elif not p.poll():
                         break
+                        
 
             if the_file :
                 the_file.close()

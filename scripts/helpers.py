@@ -11,6 +11,7 @@ from PIL import Image, UnidentifiedImageError
 from datetime import datetime
 import time
 from threading import Thread
+import urllib.parse
 
 
 root_path ='/var/www/tesseracttraining/files'
@@ -149,7 +150,7 @@ def list_folder_image_text_pair(username) :
                 result.append( (one_file, hash_set[text_filename], text_content) )
             else :
                 result.append( (one_file, '', '') )
-        elif  not one_file_lower.endswith('.gt.txt'):
+        elif  not ( one_file_lower.endswith('.gt.txt')  or one_file_lower.endswith('.lstmf')  ) :
             result.append( (one_file, '', '') )
             
     return result
@@ -158,9 +159,16 @@ def list_folder_result(username) :
     global root_path 
     final_path = generate_result_folder(username)
     create_folder_if_not_exists(final_path)
-    list_of_files = os.listdir(final_path)
-    if list_of_files is None :
-        list_of_files=[]
+    list_of_files=[]
+    for dir_, _, files in os.walk(final_path):
+        for file_name in files:
+            rel_dir = os.path.relpath(dir_, final_path)
+            if not rel_dir  or rel_dir == '.' :   
+                rel_file = file_name
+            else :
+                rel_file = os.path.join(rel_dir, file_name)
+                
+            list_of_files.append([urllib.parse.quote_plus(rel_dir, safe='') , rel_file, file_name])
     list_of_files.sort()
     return list_of_files
     
