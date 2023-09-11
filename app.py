@@ -214,8 +214,9 @@ def stream():
             more_parameters =session["more_parameters"]
             more_parameters = helpers.remove_special_char(more_parameters)
             if model_name :
+                result_dir = helpers.generate_result_folder(username)
                 ground_truth_dir = helpers.generate_image_folder(username)
-                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR= %s %s'%(model_name, ground_truth_dir, more_parameters)
+                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR=%s DATA_DIR=%s %s'%(model_name, ground_truth_dir, result_dir, more_parameters)
                 is_validate_command = True
                 logfilename= helpers.get_current_log_name(username)
                 the_file = open(logfilename, 'a') 
