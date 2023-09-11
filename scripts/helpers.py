@@ -150,7 +150,7 @@ def list_folder_image_text_pair(username) :
                 result.append( (one_file, hash_set[text_filename], text_content) )
             else :
                 result.append( (one_file, '', '') )
-        elif  not ( one_file_lower.endswith('.gt.txt')  or one_file_lower.endswith('.lstmf')  ) :
+        elif  not ( one_file_lower.endswith('.gt.txt')  or one_file_lower.endswith('.lstmf')  or one_file_lower.endswith('.box') ) :
             result.append( (one_file, '', '') )
             
     return result

@@ -15,6 +15,8 @@ import subprocess
 import urllib.parse
 from werkzeug.exceptions import HTTPException
 from pathlib import Path
+import shutil
+
 
 app = Flask(__name__)
 app.secret_key = os.urandom(12)  # Generic key for dev purposes only
@@ -215,9 +217,15 @@ def stream():
             more_parameters =session["more_parameters"]
             more_parameters = helpers.remove_special_char(more_parameters)
             if model_name :
+                model_name = model_name.strip()
                 result_dir = helpers.generate_result_folder(username)
                 ground_truth_dir = helpers.generate_image_folder(username)
-                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR=%s DATA_DIR=%s %s'%(model_name, ground_truth_dir, result_dir, more_parameters)
+                result_dir_model = os.path.join(result_dir, model_name)
+                if os.path.exists(result_dir_model) :
+                    new_path = path + '_'+ datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
+                    shutil.move(result_dir_model, new_path) 
+                copy_command ='mv -v ./data/%s %s' %(model_name, result_dir ) 
+                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR=%s %s'%(model_name, ground_truth_dir, more_parameters) + ' && ' +copy_command
                 is_validate_command = True
                 logfilename= helpers.get_current_log_name(username)
                 the_file = open(logfilename, 'a') 
