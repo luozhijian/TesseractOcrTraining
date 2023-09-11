@@ -14,7 +14,7 @@ import logging.handlers
 import subprocess
 import urllib.parse
 from werkzeug.exceptions import HTTPException
-
+from pathlib import Path
 
 app = Flask(__name__)
 app.secret_key = os.urandom(12)  # Generic key for dev purposes only
@@ -133,8 +133,14 @@ def resultfiles(name):
         file_path = request.args.get("path")
         name_file_path = urllib.parse.unquote_plus(file_path)
         real_folder = os.path.join( result_folder, name_file_path)
-        print ('%s    %s'%(real_folder, name) )
-        return send_from_directory(real_folder, name)
+        
+        path_real_folder = Path(real_folder)
+        path_result_folder = Path(result_folder)
+        if name_file_path == "." or path_result_folder in path_real_folder.parents :
+            print ('%s    %s'%(real_folder, name) )
+            return send_from_directory(real_folder, name)
+        else :
+            raise Exception("Unknow file name: %s/%s"%(name_file_path, name) )
     return redirect(url_for('login'))
         
         
