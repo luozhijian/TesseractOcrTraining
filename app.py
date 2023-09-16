@@ -24,8 +24,8 @@ logger =None
  
 #  most code is from Flaskex
 
-@app.route("/<string:path>")
-@app.route("/<path:path>")
+@app.route("/<string:path>", methods=['GET', 'POST'])
+@app.route("/<path:path>", methods=['GET', 'POST'])
 def index2(path):
     return path
     
