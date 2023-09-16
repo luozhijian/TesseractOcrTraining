@@ -3,7 +3,7 @@
 from scripts import tabledef
 from scripts import forms
 from scripts import helpers
-from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, Response, Blueprint, jsonify
+from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, Response
 from pygtail import Pygtail
 import json
 import sys
@@ -20,11 +20,21 @@ import werkzeug.serving
 werkzeug.serving._log_add_style = False
 
 app = Flask(__name__)
-errors = Blueprint('errors', __name__)
 
 app.secret_key = os.urandom(12)  # Generic key for dev purposes only
 logger =None 
- 
+
+logger = logging.getLogger('MainProgram')
+file_handler = logging.handlers.RotatingFileHandler('/var/log/tesseracttraining/tesseracttraining.log', maxBytes=2000000, backupCount=50)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+file_handler.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
+helpers.logger = logger
+    
+    
 #  some code is from Flaskex
 
 @app.route("/<string:path>", methods=['GET', 'POST'])
@@ -77,7 +87,7 @@ def login():
             pass #eat the error
         return render_template('login.html', form=form)
     user = helpers.get_user()
-    logger.info('%s login'%user.username)
+    # logger.info('%s login'%user.username)
     return images()
     # return render_template('home.html', user=user)
 
@@ -313,16 +323,7 @@ def savetext():
         
     return redirect(url_for('login'))    
 
-logger = logging.getLogger('MainProgram')
-file_handler = logging.handlers.RotatingFileHandler('/var/log/tesseracttraining/tesseracttraining.log', maxBytes=2000000, backupCount=50)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
 
-file_handler.setLevel(logging.INFO)
-logger.addHandler(file_handler)
-logger.setLevel(logging.INFO)
-helpers.logger = logger
-    
 # ======== Main ================================= #
 if __name__ == "__main__":
 
