@@ -192,137 +192,155 @@ def results():
 # -------- upload image --------------- #
 @app.route('/upload', methods=['POST'])
 def upload():
-    if session.get('logged_in'):
-        user = helpers.get_user()
-        
-        files = request.files.getlist("fileupload")
-        
-        # fileitem = request.files['fileupload']
-        for file in files:
-            e = helpers.save_image_file(user.username, file)
+    try :
+        if session.get('logged_in'):
+            user = helpers.get_user()
             
-        return images()
+            files = request.files.getlist("fileupload")
+            
+            # fileitem = request.files['fileupload']
+            for file in files:
+                e = helpers.save_image_file(user.username, file)
+                
+            return images()
 
-    return redirect(url_for('login'))
-    
+        return redirect(url_for('login'))
+    except Exception as e :
+        if logger :
+            logger.exception(e)   
 
 # -------- training --------------- #
 @app.route('/training', methods=['GET'])
 def training():
-    if session.get('logged_in'):
-        user = helpers.get_user()
-        start_templateS = helpers.get_all_template(user.username )
-        return render_template('training.html', templateS=start_templateS)
-    return redirect(url_for('login'))    
-
+    try:
+        if session.get('logged_in'):
+            user = helpers.get_user()
+            start_templateS = helpers.get_all_template(user.username )
+            return render_template('training.html', templateS=start_templateS)
+        return redirect(url_for('login'))    
+    except Exception as e :
+        if logger :
+            logger.exception(e)
 
 
 # -------- start_training --------------- #
 @app.route('/start_training', methods=['POST'])
 def start_training():
-    if session.get('logged_in'):
-        user = helpers.get_user()
-        start_template = request.form['templatename']
-        model_name = request.form['model_name']
-        more_parameters = request.form['more_parameters']
-#        helpers.start_training_process(user.username, start_template)
-        session["start_template"]=start_template
-        session["model_name"]=model_name
-        session["more_parameters"]=more_parameters
-        return render_template('training_in_process.html', start_template=model_name)
-    return redirect(url_for('login'))    
-
+    try :
+        if session.get('logged_in'):
+            user = helpers.get_user()
+            start_template = request.form['templatename']
+            model_name = request.form['model_name']
+            more_parameters = request.form['more_parameters']
+    #        helpers.start_training_process(user.username, start_template)
+            session["start_template"]=start_template
+            session["model_name"]=model_name
+            session["more_parameters"]=more_parameters
+            return render_template('training_in_process.html', start_template=model_name)
+        return redirect(url_for('login'))    
+    except Exception as e :
+        if logger :
+            logger.exception(e)
 
 @app.route('/stream')
 def stream():
- 
-    if session.get('logged_in'):
-        command_list = None
-        p = None
-        the_file=None
-        try :
-            username = helpers.get_username()
-            start_template =session["start_template"]
-            model_name = session["model_name"]
-            more_parameters =session["more_parameters"]
-            more_parameters = helpers.remove_special_char(more_parameters)
-            if model_name :
-                model_name = model_name.strip()
-                result_dir = helpers.generate_result_folder(username)
-                ground_truth_dir = helpers.generate_image_folder(username)
-                result_dir_model = os.path.join(result_dir, model_name)
-                if os.path.exists(result_dir_model) :
-                    new_path = path + '_'+ datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
-                    shutil.move(result_dir_model, new_path) 
-                copy_command ='mv -v ./data/%s %s' %(model_name, result_dir ) 
-                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR=%s %s'%(model_name, ground_truth_dir, more_parameters) + ' && ' +copy_command
-                is_validate_command = True
-                logfilename= helpers.get_current_log_name(username)
-                the_file = open(logfilename, 'a') 
-                if is_validate_command :
-                    # command_list ="dir && ping -t localhost"
-                    p = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    try :
+        if session.get('logged_in'):
+            command_list = None
+            p = None
+            the_file=None
+            try :
+                username = helpers.get_username()
+                start_template =session["start_template"]
+                model_name = session["model_name"]
+                more_parameters =session["more_parameters"]
+                more_parameters = helpers.remove_special_char(more_parameters)
+                if model_name :
+                    model_name = model_name.strip()
+                    result_dir = helpers.generate_result_folder(username)
+                    ground_truth_dir = helpers.generate_image_folder(username)
+                    result_dir_model = os.path.join(result_dir, model_name)
+                    if os.path.exists(result_dir_model) :
+                        new_path = path + '_'+ datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
+                        shutil.move(result_dir_model, new_path) 
+                    copy_command ='mv -v ./data/%s %s' %(model_name, result_dir ) 
+                    command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR=%s %s'%(model_name, ground_truth_dir, more_parameters) + ' && ' +copy_command
+                    is_validate_command = True
+                    logfilename= helpers.get_current_log_name(username)
+                    the_file = open(logfilename, 'a') 
+                    if is_validate_command :
+                        # command_list ="dir && ping -t localhost"
+                        p = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
-            else :
-                command_list='empty model name'
-        except Exception as ex:
-                command_list += '\n' + str(ex) 
-                p = None
-        print(command_list)
-        def generate():
-            if the_file :
-                the_file.write(command_list + '\n')
-            yield "data:" + command_list  + "\n\n" + "\n\n"
-            if p :
-                while(True):
-                    line = p.stdout.readline()
-                    if line:
-                        print(line)
-                        line =str(line, "utf-8")
-                        the_file.write(line + "\n")
-                        yield "data:" + line + "\n\n" + "\n\n"
-                    elif not p.poll():
-                        break
-                        
+                else :
+                    command_list='empty model name'
+            except Exception as ex:
+                    command_list += '\n' + str(ex) 
+                    p = None
+            print(command_list)
+            def generate():
+                if the_file :
+                    the_file.write(command_list + '\n')
+                yield "data:" + command_list  + "\n\n" + "\n\n"
+                if p :
+                    while(True):
+                        line = p.stdout.readline()
+                        if line:
+                            print(line)
+                            line =str(line, "utf-8")
+                            the_file.write(line + "\n")
+                            yield "data:" + line + "\n\n" + "\n\n"
+                        elif not p.poll():
+                            break
+                            
 
-            if the_file :
-                the_file.close()
-            yield  "data:" + 'close' + "\n\n" + "\n\n"
-            
-        return Response(generate(), mimetype= 'text/event-stream')
-    return redirect(url_for('login'))    
+                if the_file :
+                    the_file.close()
+                yield  "data:" + 'close' + "\n\n" + "\n\n"
+                
+            return Response(generate(), mimetype= 'text/event-stream')
+        return redirect(url_for('login'))   
+    except Exception as e :
+        if logger :
+            logger.exception(e)    
     
 
 @app.route('/imageedit', methods=['GET'])
 def imageedit():
-    if session.get('logged_in'):
-        filename = request.args.get("file")
-        user = helpers.get_user()
-        #image_full_path_url = './files/' + user.username + '/' + filename
-        image_full_path_url = filename
-        #print(filename)
-        current_text = helpers.read_image_text(user.username, filename)
-        return render_template('imageedit.html', image_full_path=image_full_path_url
-                , image_path=filename, current_text=current_text)
-    return redirect(url_for('login'))    
-
+    try:
+        if session.get('logged_in'):
+            filename = request.args.get("file")
+            user = helpers.get_user()
+            #image_full_path_url = './files/' + user.username + '/' + filename
+            image_full_path_url = filename
+            #print(filename)
+            current_text = helpers.read_image_text(user.username, filename)
+            return render_template('imageedit.html', image_full_path=image_full_path_url
+                    , image_path=filename, current_text=current_text)
+        return redirect(url_for('login'))    
+    except Exception as e :
+        if logger :
+            logger.exception(e)
 
 @app.route('/savetext', methods=['GET', 'POST' ])
 def savetext():
-    if session.get('logged_in'):
-        imagefilename = request.args.get("image")
-        user = helpers.get_user()
-        action =request.form['action'] 
-        if action == 'Submit' :
-            imagetext = request.form['imagetext'] 
-            helpers.save_image_text(user.username, imagefilename, imagetext)
-        elif action == 'Delete' :
-            helpers.delete_one_image_file(user.username, imagefilename);
-        
-        return images()
-        
-    return redirect(url_for('login'))    
-
+    try:
+        if session.get('logged_in'):
+            imagefilename = request.args.get("image")
+            user = helpers.get_user()
+            action =request.form['action'] 
+            if action == 'Submit' :
+                imagetext = request.form['imagetext'] 
+                helpers.save_image_text(user.username, imagefilename, imagetext)
+            elif action == 'Delete' :
+                helpers.delete_one_image_file(user.username, imagefilename);
+            
+            return images()
+            
+        return redirect(url_for('login'))    
+    except Exception as e :
+        if logger :
+            logger.exception(e)
 
 # ======== Main ================================= #
 if __name__ == "__main__":
