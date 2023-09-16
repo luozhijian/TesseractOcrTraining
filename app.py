@@ -3,7 +3,7 @@
 from scripts import tabledef
 from scripts import forms
 from scripts import helpers
-from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, Response
+from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, Response, Blueprint, jsonify
 from pygtail import Pygtail
 import json
 import sys
@@ -16,18 +16,25 @@ import urllib.parse
 from werkzeug.exceptions import HTTPException
 from pathlib import Path
 import shutil
-
+import werkzeug.serving
+werkzeug.serving._log_add_style = False
 
 app = Flask(__name__)
+errors = Blueprint('errors', __name__)
+
 app.secret_key = os.urandom(12)  # Generic key for dev purposes only
 logger =None 
  
-#  most code is from Flaskex
+#  some code is from Flaskex
 
 @app.route("/<string:path>", methods=['GET', 'POST'])
 @app.route("/<path:path>", methods=['GET', 'POST'])
 def index2(path):
     return path
+    
+@app.route('/favicon.ico') 
+def favicon(): 
+    return send_from_directory(os.path.join(app.root_path, 'static/icons'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
     
     
 @app.errorhandler(404)
@@ -42,8 +49,8 @@ def handle_exception(e):
         logger.exception(e)
         logger.error('error path:' + path)
     # pass through HTTP errors
-    if isinstance(e, HTTPException):
-        return e
+    # if isinstance(e, HTTPException):
+        # return e
 
     # now you're handling non-HTTP exceptions only
     return render_template("500_generic.html", e=e), 500
@@ -121,13 +128,16 @@ def settings():
 # -------- images --------------- #
 @app.route('/images', methods=['GET', 'POST'])
 def images():
-    if session.get('logged_in'):
-        user = helpers.get_user()
-        # list, get bitmap and linked text file
-        filepairs = helpers.list_folder_image_text_pair(user.username )
-        return render_template('images.html', user=user, filepairs = filepairs)
-    return redirect(url_for('login'))
-    
+    try:
+        if session.get('logged_in'):
+            user = helpers.get_user()
+            # list, get bitmap and linked text file
+            filepairs = helpers.list_folder_image_text_pair(user.username )
+            return render_template('images.html', user=user, filepairs = filepairs)
+        return redirect(url_for('login'))
+    except Exception as e :
+        if logger :
+            logger.exception(e)
     
 @app.route('/imagefiles/<name>')
 def imagefiles(name):
