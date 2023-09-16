@@ -24,6 +24,16 @@ logger =None
  
 #  most code is from Flaskex
 
+@app.route("/<string:path>")
+@app.route("/<path:path>")
+def index2(path):
+    return path
+    
+    
+@app.errorhandler(404)
+def page_not_found(e):
+    # your processing here
+    return ''
 
 @app.errorhandler(Exception)
 def handle_exception(e):
