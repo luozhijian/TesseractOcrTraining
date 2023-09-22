@@ -80,6 +80,7 @@ def login():
                     if helpers.credentials_valid(username, password):
                         session['logged_in'] = True
                         session['username'] = username
+                        logger.info('%s login json'%user.username)
                         return json.dumps({'status': 'Login successful'})
                     return json.dumps({'status': 'Invalid user/pass'})
                 return json.dumps({'status': 'Both fields required'})
@@ -87,7 +88,7 @@ def login():
             pass #eat the error
         return render_template('login.html', form=form)
     user = helpers.get_user()
-    # logger.info('%s login'%user.username)
+    logger.info('%s login refresh'%user.username)
     return images()
     # return render_template('home.html', user=user)
 
@@ -261,7 +262,7 @@ def stream():
                     ground_truth_dir = helpers.generate_image_folder(username)
                     result_dir_model = os.path.join(result_dir, model_name)
                     if os.path.exists(result_dir_model) :
-                        new_path = path + '_'+ datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
+                        new_path = result_dir_model + '_'+ datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
                         shutil.move(result_dir_model, new_path) 
                     copy_command ='mv -v ./data/%s %s' %(model_name, result_dir ) 
                     command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR=%s %s'%(model_name, ground_truth_dir, more_parameters) + ' && ' +copy_command
