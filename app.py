@@ -21,6 +21,7 @@ import datetime
 werkzeug.serving._log_add_style = False
 
 app = Flask(__name__)
+app.config.update(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True)
 
 app.secret_key = os.urandom(12)  # Generic key for dev purposes only
 logger =None 
