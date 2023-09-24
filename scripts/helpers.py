@@ -176,6 +176,7 @@ def list_folder_result(username) :
 def save_image_file(username, fileitem) :
     # check if the file has been uploaded
     try :
+        final_filename=''
         if fileitem.filename:
             # strip the leading path from the file name
             fn = os.path.basename(fileitem.filename)
@@ -184,15 +185,15 @@ def save_image_file(username, fileitem) :
             need_convert_image_file = False 
             #only png, tif is auto supported
             if  fn_lower.endswith('.bmp') or fn_lower.endswith('.jpg') or fn_lower.endswith('.jpeg') or fn_lower.endswith('.ico')  or fn_lower.endswith('.tiff') :
-                final_filename +='.png'
+                final_filename =fn + '.png'
                 need_convert_image_file = True
-            final_filename = os.path.join(root_path, username, final_filename)
+            final_filename_fullpath = os.path.join(root_path, username, final_filename)
            # open read and write the file into the server
             if need_convert_image_file :
                 im = Image.open(fileitem)
-                im.save(final_filename)
+                im.save(final_filename_fullpath)
             else :
-                open(final_filename, 'wb').write(fileitem.read())
+                open(final_filename_fullpath, 'wb').write(fileitem.read())
         temp_messgage =  final_filename + ' saved'
         logger.info(temp_messgage)
         return temp_messgage

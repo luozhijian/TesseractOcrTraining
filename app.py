@@ -147,6 +147,7 @@ def images():
             # list, get bitmap and linked text file
             filepairs = helpers.list_folder_image_text_pair(user.username )
             return render_template('images.html', user=user, filepairs = filepairs)
+        logger.info("did not login forward to login")       
         return redirect(url_for('login'))
     except Exception as e :
         if logger :
@@ -158,6 +159,7 @@ def imagefiles(name):
     if session.get('logged_in'):
         username = helpers.get_username()
         return send_from_directory(helpers.generate_image_folder(username), name)
+    logger.info("imagefiles did not login forward to login")       
     return redirect(url_for('login'))
         
 @app.route('/resultfiles/<name>')
@@ -177,6 +179,7 @@ def resultfiles(name):
             return send_from_directory(real_folder, name)
         else :
             raise Exception("Unknow file name: %s/%s"%(name_file_path, name) )
+    logger.info("resultfiles did not login forward to login")       
     return redirect(url_for('login'))
         
         
@@ -189,6 +192,7 @@ def results():
         # list the content in result folder, and for download
         results = helpers.list_folder_result(user.username )
         return render_template('results.html', results=results)
+    logger.info("results did not login forward to login")       
     return redirect(url_for('login'))
     
     
@@ -206,7 +210,7 @@ def upload():
                 e = helpers.save_image_file(user.username, file)
                 
             return images()
-
+        logger.info("upload did not login forward to login")       
         return redirect(url_for('login'))
     except Exception as e :
         if logger :
@@ -221,6 +225,7 @@ def training():
             user = helpers.get_user()
             start_templateS = helpers.get_all_template(user.username )
             return render_template('training.html', templateS=start_templateS)
+        logger.info("training did not login forward to login")
         return redirect(url_for('login'))    
     except Exception as e :
         if logger :
@@ -241,6 +246,7 @@ def start_training():
             session["model_name"]=model_name
             session["more_parameters"]=more_parameters
             return render_template('training_in_process.html', start_template=model_name)
+        logger.info("start_training did not login forward to login")       
         return redirect(url_for('login'))    
     except Exception as e :
         if logger :
@@ -323,6 +329,7 @@ def imageedit():
             current_text = helpers.read_image_text(user.username, filename)
             return render_template('imageedit.html', image_full_path=image_full_path_url
                     , image_path=filename, current_text=current_text)
+        logger.info("imageedit did not login forward to login")       
         return redirect(url_for('login'))    
     except Exception as e :
         if logger :
@@ -344,6 +351,7 @@ def savetext():
             
             return images()
             
+        logger.info("savetext did not login forward to login ")       
         return redirect(url_for('login'))    
     except Exception as e :
         if logger :
