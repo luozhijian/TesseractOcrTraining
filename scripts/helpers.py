@@ -182,19 +182,15 @@ def save_image_file(username, fileitem) :
             fn_lower = fn.lower()
             final_filename = fn
             need_convert_image_file = False 
-            if not  ( fn_lower.endswith('.png') or fn_lower.endswith('.tif') ) :
+            #only png, tif is auto supported
+            if  fn_lower.endswith('.bmp') or fn_lower.endswith('.jpg') or fn_lower.endswith('.jpeg') or fn_lower.endswith('.ico')  or fn_lower.endswith('.tiff') :
                 final_filename +='.png'
                 need_convert_image_file = True
             final_filename = os.path.join(root_path, username, final_filename)
            # open read and write the file into the server
             if need_convert_image_file :
-                try :
-                    im = Image.open(fileitem)
-                    im.save(final_filename)
-                except UnidentifiedImageError :
-                    final_filename = final_filename[:-4]
-                    open(final_filename, 'wb').write(fileitem.read())
-                
+                im = Image.open(fileitem)
+                im.save(final_filename)
             else :
                 open(final_filename, 'wb').write(fileitem.read())
         temp_messgage =  final_filename + ' saved'

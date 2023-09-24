@@ -81,7 +81,7 @@ def login():
                     if helpers.credentials_valid(username, password):
                         session['logged_in'] = True
                         session['username'] = username
-                        logger.info('%s login json'%user.username)
+                        logger.info('%s login json'% username)
                         return json.dumps({'status': 'Login successful'})
                     return json.dumps({'status': 'Invalid user/pass'})
                 return json.dumps({'status': 'Both fields required'})
@@ -89,7 +89,8 @@ def login():
             pass #eat the error
         return render_template('login.html', form=form)
     user = helpers.get_user()
-    logger.info('%s login refresh'%user.username)
+    if user :
+        logger.info('%s login refresh'%user.username)
     return images()
     # return render_template('home.html', user=user)
 
@@ -209,7 +210,8 @@ def upload():
         return redirect(url_for('login'))
     except Exception as e :
         if logger :
-            logger.exception(e)   
+            logger.exception(e) 
+        return handle_exception(e)
 
 # -------- training --------------- #
 @app.route('/training', methods=['GET'])
@@ -223,7 +225,7 @@ def training():
     except Exception as e :
         if logger :
             logger.exception(e)
-
+        return handle_exception(e)
 
 # -------- start_training --------------- #
 @app.route('/start_training', methods=['POST'])
@@ -243,6 +245,7 @@ def start_training():
     except Exception as e :
         if logger :
             logger.exception(e)
+        return handle_exception(e)
 
 @app.route('/stream')
 def stream():
@@ -304,7 +307,8 @@ def stream():
         return redirect(url_for('login'))   
     except Exception as e :
         if logger :
-            logger.exception(e)    
+            logger.exception(e)  
+        return handle_exception(e)
     
 
 @app.route('/imageedit', methods=['GET'])
@@ -323,6 +327,7 @@ def imageedit():
     except Exception as e :
         if logger :
             logger.exception(e)
+        return handle_exception(e)
 
 @app.route('/savetext', methods=['GET', 'POST' ])
 def savetext():
@@ -343,6 +348,7 @@ def savetext():
     except Exception as e :
         if logger :
             logger.exception(e)
+        return handle_exception(e)
 
 # ======== Main ================================= #
 if __name__ == "__main__":
