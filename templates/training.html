@@ -27,7 +27,7 @@
 				return confirm(message1);
 		  }
 	</script>
-
+<div style="float:center;">   <b> <font color ='red'> {{ message_is_running }}  </font> </b>   </div>
 	<div style="float:left;">    
 		<label for="language">Select a template to start with:</label>
 		<select name="templatename" id="templatename">
@@ -53,7 +53,7 @@
 	<br>
 	<div style="clear: both;"></div>
 	<div style="float:center;">
-		<input type="submit" value="Submit" onclick="return confirm_training()">
+		<input type="submit" value="Submit" onclick="return confirm_training()"  {{enable_disable}}  >
 	</div>
 
 </form>

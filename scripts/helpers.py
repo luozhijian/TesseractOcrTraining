@@ -36,6 +36,9 @@ def session_scope():
 
 def get_session():
     return sessionmaker(bind=tabledef.engine)()
+    
+def get_training_in_process():
+    return training_in_process
 
 
 def get_user():

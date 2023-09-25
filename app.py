@@ -227,7 +227,12 @@ def training():
         if session.get('logged_in'):
             user = helpers.get_user()
             start_templateS = helpers.get_all_template(user.username )
-            return render_template('training.html', templateS=start_templateS)
+            message_is_running=''
+            enable_disable =''
+            if  helpers.get_training_in_process() :
+                message_is_running ="Another user is running the training, can only one user can use it at the same time"
+                enable_disable ='disabled '
+            return render_template('training.html', templateS=start_templateS, message_is_running = message_is_running,  enable_disable= enable_disable)
         logger.info("training did not login forward to login")
         return redirect(url_for('login'))    
     except Exception as e :
