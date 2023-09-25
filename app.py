@@ -21,9 +21,8 @@ import datetime
 werkzeug.serving._log_add_style = False
 
 app = Flask(__name__)
-app.config.update(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True)
 
-app.secret_key = os.urandom(12)  # Generic key for dev purposes only
+app.secret_key = 'TesseractOcrTraining' # Generic key for dev purposes only
 logger =None 
 
 logger = logging.getLogger('MainProgram')
@@ -83,15 +82,13 @@ def login():
                         if helpers.credentials_valid(username, password):
                             session['logged_in'] = True
                             session['username'] = username
-                            logger.info('%s login json'% username)
                             return json.dumps({'status': 'Login successful'})
                         return json.dumps({'status': 'Invalid user/pass'})
                     return json.dumps({'status': 'Both fields required'})
             except :
                 pass #eat the error
             return render_template('login.html', form=form)
-        if logger :
-            logger.info('login page for images')
+
         user = helpers.get_user()
         if user :
             logger.info('%s login refresh'%user.username)

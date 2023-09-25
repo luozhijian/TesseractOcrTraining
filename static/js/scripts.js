@@ -18,7 +18,10 @@ var login = function() {
            "password": $("#login-pass").val()},
     success(response){
       var status = JSON.parse(response)["status"];
-      if (status === "Login successful") { location.reload(); }
+	  console.log("return status: " + status );
+      if (status === "Login successful") {
+		  location.reload(); 
+		  }
       else { error("login-input"); }
     }
   });
