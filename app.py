@@ -226,13 +226,13 @@ def training():
     try:
         if session.get('logged_in'):
             user = helpers.get_user()
-            start_templateS = helpers.get_all_template(user.username )
+            start_templates = helpers.get_all_template(user.username )
             message_is_running=''
             enable_disable =''
             if  helpers.get_training_in_process() :
                 message_is_running ="Another user is running the training, can only one user can use it at the same time"
-                enable_disable ='disabled '
-            return render_template('training.html', templateS=start_templateS, message_is_running = message_is_running,  enable_disable= enable_disable)
+                enable_disable ='disabled'
+            return render_template('training.html', templates=start_templates, message_is_running = message_is_running,  enable_disable= enable_disable)
         logger.info("training did not login forward to login")
         return redirect(url_for('login'))    
     except Exception as e :
@@ -276,6 +276,9 @@ def stream():
                 more_parameters = helpers.remove_special_char(more_parameters)
                 if model_name :
                     model_name = model_name.strip()
+                    start_model_string =''
+                    if  len(start_template ) >0 :
+                        start_model_string = "START_MODEL=" + start_template
                     result_dir = helpers.generate_result_folder(username)
                     ground_truth_dir = helpers.generate_image_folder(username)
                     result_dir_model = os.path.join(result_dir, model_name)
@@ -283,7 +286,7 @@ def stream():
                         new_path = result_dir_model + '_'+ datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
                         shutil.move(result_dir_model, new_path) 
                     copy_command ='mv -v ./data/%s %s' %(model_name, result_dir ) 
-                    command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s GROUND_TRUTH_DIR=%s %s'%(model_name, ground_truth_dir, more_parameters) + ' && ' +copy_command
+                    command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s %s GROUND_TRUTH_DIR=%s %s'%(model_name, start_model_string, ground_truth_dir, more_parameters) + ' && ' +copy_command
                     is_validate_command = True
                     logfilename= helpers.get_current_log_name(username)
                     the_file = open(logfilename, 'a') 

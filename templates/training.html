@@ -22,8 +22,14 @@
 					alert("please input a validate model name");
 					return false;
 				}
+				var templatename= document.getElementById("templatename").value.trim();
+				vart template_string =''
+				if (templatename.length >=1 ) {
+					 
+					template_string = "START_MODEL=" + templatename
+				}
 				var more_parameters =document.getElementById("more_parameters").value.trim();
-				var message1 =  'Command will be like following, Continue?\n make training START_MODEL=' + model_name + ' ' + more_parameters;
+				var message1 =  'Command will be like following, Continue?\n make training MODEL_NAME=' + model_name +' ' +template_string + ' ' + more_parameters;
 				return confirm(message1);
 		  }
 	</script>
@@ -31,7 +37,6 @@
 	<div style="float:left;">    
 		<label for="language">Select a template to start with:</label>
 		<select name="templatename" id="templatename">
-			<option value="empty">empty</option> 
 			{% for template in templates %}
 				<option value="{{template}}">{{template}}</option> 
 			{% endfor %}
@@ -59,9 +64,7 @@
 </form>
 
  
-<br><br> <br> <text>I cannot get START_MODEL to work in make training START_MODEL. so, this will be ignored</text>
 
-  
     </div>
   </div>
 </section>
