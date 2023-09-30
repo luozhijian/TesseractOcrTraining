@@ -15,8 +15,8 @@ import urllib.parse
 
 
 root_path ='/var/www/tesseracttraining/files'
-# root_path_tessdata ='/usr/local/src/tesstrain/usr/share/tessdata'
-root_path_tessdata = 'c:/temp'
+root_path_tessdata ='/usr/local/src/tesstrain/usr/share/tessdata'
+# root_path_tessdata = 'c:/temp'
 training_in_process = False
 
 current_log_name =None
@@ -209,6 +209,7 @@ def save_image_file(username, fileitem) :
 # return all current tesseract train data to begin with            
 def get_all_template(username ) :
     template_path =root_path_tessdata
+    list_of_files=None
     if os.path.isdir( template_path ):
         list_of_files_temp = os.listdir(template_path)
         list_of_files= [ s[:-12] for s in list_of_files_temp if s.lower().endswith('.traineddata') ]
