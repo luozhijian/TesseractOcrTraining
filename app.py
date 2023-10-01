@@ -155,7 +155,8 @@ def images():
     except Exception as e :
         if logger :
             logger.exception(e)
-    
+
+          
 @app.route('/imagefiles/<name>')
 def imagefiles(name):
     # print('imagefile%s'%name)
@@ -165,40 +166,57 @@ def imagefiles(name):
     logger.info("imagefiles did not login forward to login")       
     return redirect(url_for('login'))
         
-@app.route('/resultfiles/<name>')
-def resultfiles(name):
+@app.route('/download/<name>')
+def download(name):
     # print('result: %s'%name)
     if session.get('logged_in'):
+        if name not in ['images', 'logs', 'results'] :
+            return redirect(url_for('login'))
         username = helpers.get_username()
-        result_folder = helpers.generate_result_folder(username)
-        file_path = request.args.get("path")
-        name_file_path = urllib.parse.unquote_plus(file_path)
-        real_folder = os.path.join( result_folder, name_file_path)
+        result_folder = helpers.generate_result_folder(username, name)
+        filename_with_path = request.args.get("path")
+        filename_with_path_unquoted = urllib.parse.unquote_plus(filename_with_path)
+        path_part, filenamePart = os.path.split(filename_with_path_unquoted)
+        real_folder = os.path.join( result_folder, path_part)
         
         path_real_folder = Path(real_folder)
         path_result_folder = Path(result_folder)
-        if name_file_path == "." or path_result_folder in path_real_folder.parents :
-            print ('%s    %s'%(real_folder, name) )
-            return send_from_directory(real_folder, name)
+        if path_part == "." or path_result_folder in path_real_folder.parents :
+            # print ('%s    %s'%(real_folder, name) )
+            return send_from_directory(real_folder, filenamePart)
         else :
-            raise Exception("Unknow file name: %s/%s"%(name_file_path, name) )
+            raise Exception("Unknow file name: %s/%s"%(name, filename_with_path_unquoted) )
     logger.info("resultfiles did not login forward to login")       
     return redirect(url_for('login'))
         
         
 
-# -------- images --------------- #
+# -------- results --------------- #
 @app.route('/results', methods=['GET', 'POST'])
 def results():
     if session.get('logged_in'):
         user = helpers.get_user()
         # list the content in result folder, and for download
-        results = helpers.list_folder_result(user.username )
-        return render_template('results.html', results=results)
+        folder_type =  'results' 
+        results = helpers.list_folder_result(user.username, folder_type )
+        return render_template('files_for_download.html', results=results, folder_type =folder_type)
+    logger.info("results did not login forward to login")       
+    return redirect(url_for('login'))
+
+
+# -------- logs --------------- #
+@app.route('/logs', methods=['GET', 'POST'])
+def logs():
+    if session.get('logged_in'):
+        user = helpers.get_user()
+        # list the content in logs folder, and for download
+        folder_type =  'logs' 
+        results = helpers.list_folder_result(user.username, folder_type  )
+        return render_template('files_for_download.html', results=results, folder_type =folder_type)
     logger.info("results did not login forward to login")       
     return redirect(url_for('login'))
     
-    
+   
 # -------- upload image --------------- #
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -240,6 +258,19 @@ def training():
             logger.exception(e)
         return handle_exception(e)
 
+def threaded_function_start_training(arg):
+    (is_validate_command, command_list, logfilename ) =arg
+    with  the_logfile = open(logfilename, 'a')  :
+        the_file.write( command_list)
+        if is_validate_command :
+            # command_list ="dir && ping -t localhost"
+            p = subprocess.Popen(command_list, stdout=the_logfile, stderr=subprocess.STDOUT, shell=True)
+            p.wait()
+        the_logfile.flush()
+        the_logfile.write('\n\nCompleted: %s'%logfilename)
+        close(the_logfile)
+ 
+
 # -------- start_training --------------- #
 @app.route('/start_training', methods=['POST'])
 def start_training():
@@ -253,7 +284,33 @@ def start_training():
             session["start_template"]=start_template
             session["model_name"]=model_name
             session["more_parameters"]=more_parameters
-            return render_template('training_in_process.html', start_template=model_name)
+            
+            if model_name :
+                model_name = model_name.strip()
+                start_model_string =''
+                if  len(start_template ) >0 :
+                    start_model_string = "START_MODEL=" + start_template
+                result_dir = helpers.generate_result_folder(username)
+                ground_truth_dir = helpers.generate_image_folder(username)
+                result_dir_model = os.path.join(result_dir, model_name)
+                if os.path.exists(result_dir_model) :
+                    new_path = result_dir_model + '_'+ datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
+                    shutil.move(result_dir_model, new_path) 
+                if os.path.exists(result_dir_model +'.traineddata') :
+                    new_path_2= result_dir_model+'.traineddata' + '_'+ datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
+                    shutil.move(result_dir_model +'.traineddata', new_path_2) 
+                copy_command_1 ='mv -v ./data/%s %s' %(model_name, result_dir ) 
+                copy_command_2 ='mv -v ./data/%s.traineddata %s' %(model_name, result_dir ) 
+                copy_command = copy_command_1 +  ' &&  ' +  copy_command_2
+                command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s %s GROUND_TRUTH_DIR=%s %s'%(model_name, start_model_string, ground_truth_dir, more_parameters) + ' && ' +copy_command
+                is_validate_command = True
+                logfilename= helpers.get_current_log_name(username)
+                thread = Thread(target = threaded_function_start_training, args = (is_validate_command, command_list, logfilename )  )
+                thread.start()
+        
+            
+            
+            return render_template('training_in_process.html', start_template=model_name, logfilename =logfilename)
         logger.info("start_training did not login forward to login")       
         return redirect(url_for('login'))    
     except Exception as e :
@@ -261,7 +318,7 @@ def start_training():
             logger.exception(e)
         return handle_exception(e)
 
-@app.route('/stream')
+@app.route('/stream/<logfilename>')
 def stream():
     try :
         if session.get('logged_in'):
@@ -290,6 +347,7 @@ def stream():
                     is_validate_command = True
                     logfilename= helpers.get_current_log_name(username)
                     the_file = open(logfilename, 'a') 
+
                     if is_validate_command :
                         # command_list ="dir && ping -t localhost"
                         p = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
@@ -299,7 +357,7 @@ def stream():
             except Exception as ex:
                     command_list += '\n' + str(ex) 
                     p = None
-            print(command_list)
+            # print(command_list)
             def generate():
                 if the_file :
                     the_file.write(command_list + '\n')

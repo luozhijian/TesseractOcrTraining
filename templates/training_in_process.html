@@ -15,7 +15,7 @@ ul li{
 
           <h1 class="title">Training in process </h1>   
  		  
-		  <h2>Start from {{start_template}} </h2>
+		  <h2>Start from {{start_template}}  Log file name {{logfilename}}</h2>
 		  <br>
     <div>
 	<ul id="display_list" minlength="800" >
@@ -23,7 +23,7 @@ ul li{
 				
 
 <script type="text/javascript">
-	var source = new EventSource("/stream");
+	var source = new EventSource("/stream/{{logfilename}}");
 	source.onmessage = function(event) {
 		// $('#display').prepend(event.data);
 		$('#display_list').append('<li>'+event.data.trim()+'</li>');

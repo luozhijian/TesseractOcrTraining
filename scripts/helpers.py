@@ -96,11 +96,13 @@ def generate_image_folder(username ) :
 def generate_image_fullpath(username, image_filename ) :
     return os.path.join(root_path, username, image_filename) 
 
-def generate_result_folder(username ) :
-    return os.path.join(root_path, username, 'results') 
+def generate_result_folder(username, folder_name) :
+    if folder_name == 'images' :
+        return generate_image_folder(username)
+    return os.path.join(root_path, username, folder_name) 
 
 def get_current_log_name(username ) :
-    log_folder = os.path.join(root_path, username,'log')
+    log_folder = os.path.join(root_path, username,'logs')
     create_folder_if_not_exists (log_folder)
     log_filename = 'log_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
     return os.path.join(log_folder, log_filename +'.log')
@@ -161,7 +163,7 @@ def list_folder_image_text_pair(username) :
             
     return result
    
-def list_folder_result(username) :
+def list_folder_result(username, folder) :
     global root_path 
     final_path = generate_result_folder(username)
     create_folder_if_not_exists(final_path)
@@ -174,7 +176,7 @@ def list_folder_result(username) :
             else :
                 rel_file = os.path.join(rel_dir, file_name)
                 
-            list_of_files.append([urllib.parse.quote_plus(rel_dir, safe='') , rel_file, file_name])
+            list_of_files.append([urllib.parse.quote_plus(rel_file, safe='') , rel_file, folder])
     list_of_files.sort()
     return list_of_files
     

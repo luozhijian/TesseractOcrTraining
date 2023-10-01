@@ -39,7 +39,6 @@ text-align: left;
        <h2>  {{ error }}  </h2> 
 	<br/>
 
-
 		
         </div>
       </div>    
@@ -59,8 +58,8 @@ text-align: left;
 <tbody>
   {% for filepair in filepairs %}
 	<tr>
-	  <td>{{filepair[0]}}</td>
-	  <td>{{filepair[1]}}</td>
+	  <td> <a href="/imagefiles/{{ filepair[0] }}" download><img class="center" src="/imagefiles/{{filepair[0]}}" alt="{{filepair[0]}}"  /></a>   </td>
+	  <td> <a href="/imagefiles/{{ filepair[1] }}" download>{{filepair[1]}}</a>   </td>
 	  <td>{{filepair[2]}}</td>
 	  <td> <a href="/imageedit?file={{filepair[0]}}">Edit </a> </td>
   </tr>

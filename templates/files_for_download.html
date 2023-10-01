@@ -7,7 +7,7 @@
     <div class="container has-text-centered">
       <div id="settings" class="settings-box">
         <div class="settings-area">    
-          <h1 class="title">Results</h1>   
+          <h1 class="title">{{ folder_type }}</h1>   
 
 
 		  
@@ -15,13 +15,13 @@
 <!-- Table headers -->
     <th>
         <tr style="color: silver; ">    
-        <td>Result</td>
+        <td>{{ folder_type }}</td>
 </tr>
     </th>  
 <tbody>
   {% for result in results %}
 	<tr>
-	  <td> <a href="/resultfiles/{{ result[2] }}?path={{ result[0] }}" download>{{ result[1] }}</a></td>
+	  <td> <a href="/download/{{ result[2] }}?path={{ result[0] }}" download>{{ result[1] }}</a></td>
 	</tr>
   {% endfor %}
 </tbody>
