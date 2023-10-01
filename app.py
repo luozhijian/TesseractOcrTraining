@@ -18,6 +18,7 @@ from pathlib import Path
 import shutil
 import werkzeug
 import datetime
+from threading import Thread
 werkzeug.serving._log_add_style = False
 
 app = Flask(__name__)
@@ -34,7 +35,7 @@ file_handler.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 helpers.logger = logger
-    
+training_in_process = False    
     
 #  some code is from Flaskex
 
@@ -170,22 +171,23 @@ def imagefiles(name):
 def download(name):
     # print('result: %s'%name)
     if session.get('logged_in'):
-        if name not in ['images', 'logs', 'results'] :
-            return redirect(url_for('login'))
         username = helpers.get_username()
-        result_folder = helpers.generate_result_folder(username, name)
+        result_folder = helpers.generate_image_folder(username)
         filename_with_path = request.args.get("path")
         filename_with_path_unquoted = urllib.parse.unquote_plus(filename_with_path)
         path_part, filenamePart = os.path.split(filename_with_path_unquoted)
+        print (path_part)
+        print (filenamePart)
         real_folder = os.path.join( result_folder, path_part)
         
         path_real_folder = Path(real_folder)
         path_result_folder = Path(result_folder)
-        if path_part == "." or path_result_folder in path_real_folder.parents :
+        if (not path_part ) or path_part == "." or path_result_folder in path_real_folder.parents :
             # print ('%s    %s'%(real_folder, name) )
             return send_from_directory(real_folder, filenamePart)
         else :
             raise Exception("Unknow file name: %s/%s"%(name, filename_with_path_unquoted) )
+    # print("resultfiles did not login forward to login")       
     logger.info("resultfiles did not login forward to login")       
     return redirect(url_for('login'))
         
@@ -247,8 +249,8 @@ def training():
             start_templates = helpers.get_all_template(user.username )
             message_is_running=''
             enable_disable =''
-            if  helpers.get_training_in_process() :
-                message_is_running ="Another user is running the training, can only one user can use it at the same time"
+            if  training_in_process :
+                message_is_running ="Another user is running the training, can only one user can use it at the same time, please visit late to check"
                 enable_disable ='disabled'
             return render_template('training.html', templates=start_templates, message_is_running = message_is_running,  enable_disable= enable_disable)
         logger.info("training did not login forward to login")
@@ -259,25 +261,39 @@ def training():
         return handle_exception(e)
 
 def threaded_function_start_training(arg):
-    (is_validate_command, command_list, logfilename ) =arg
-    with  the_logfile = open(logfilename, 'a')  :
-        the_file.write( command_list)
-        if is_validate_command :
-            # command_list ="dir && ping -t localhost"
-            p = subprocess.Popen(command_list, stdout=the_logfile, stderr=subprocess.STDOUT, shell=True)
-            p.wait()
-        the_logfile.flush()
-        the_logfile.write('\n\nCompleted: %s'%logfilename)
-        close(the_logfile)
- 
+    try :
+        (is_validate_command, command_list, logfilename ) =arg
+        with  open(logfilename, 'a')  as the_logfile  :
+            try :
+                if training_in_process :
+                    raise Exception( 'Another training already in process')
+                training_in_process = True
+                the_file.write( command_list)
+                if is_validate_command :
+                    # command_list ="dir && ping -t localhost"
+                    p = subprocess.Popen(command_list, stdout=the_logfile, stderr=subprocess.STDOUT, shell=True)
+                    p.wait()
+                the_logfile.flush()
+                the_logfile.write('\n\nCompleted: %s'%logfilename)
+            except Exception as e :
+                the_logfile.write(e)
+                if logger :
+                    logger.exception(e)            
+    finally :
+        training_in_process =False
 
 # -------- start_training --------------- #
 @app.route('/start_training', methods=['POST'])
 def start_training():
+    print('start_training')
     try :
         if session.get('logged_in'):
             user = helpers.get_user()
-            start_template = request.form['templatename']
+            start_template=''
+            try :
+                start_template = request.form['templatename']
+            except :
+                pass
             model_name = request.form['model_name']
             more_parameters = request.form['more_parameters']
     #        helpers.start_training_process(user.username, start_template)
@@ -286,11 +302,12 @@ def start_training():
             session["more_parameters"]=more_parameters
             
             if model_name :
+                username = helpers.get_username()
                 model_name = model_name.strip()
                 start_model_string =''
                 if  len(start_template ) >0 :
                     start_model_string = "START_MODEL=" + start_template
-                result_dir = helpers.generate_result_folder(username)
+                result_dir = helpers.generate_result_folder(username, "results")
                 ground_truth_dir = helpers.generate_image_folder(username)
                 result_dir_model = os.path.join(result_dir, model_name)
                 if os.path.exists(result_dir_model) :
@@ -305,6 +322,7 @@ def start_training():
                 command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s %s GROUND_TRUTH_DIR=%s %s'%(model_name, start_model_string, ground_truth_dir, more_parameters) + ' && ' +copy_command
                 is_validate_command = True
                 logfilename= helpers.get_current_log_name(username)
+                session["logfilename"]=logfilename
                 thread = Thread(target = threaded_function_start_training, args = (is_validate_command, command_list, logfilename )  )
                 thread.start()
         
@@ -314,6 +332,7 @@ def start_training():
         logger.info("start_training did not login forward to login")       
         return redirect(url_for('login'))    
     except Exception as e :
+        print(e)
         if logger :
             logger.exception(e)
         return handle_exception(e)
@@ -321,61 +340,17 @@ def start_training():
 @app.route('/stream/<logfilename>')
 def stream():
     try :
-        if session.get('logged_in'):
-            command_list = ''
-            p = None
-            the_file=None
-            try :
-                username = helpers.get_username()
-                start_template =session["start_template"]
-                model_name = session["model_name"]
-                more_parameters =session["more_parameters"]
-                more_parameters = helpers.remove_special_char(more_parameters)
-                if model_name :
-                    model_name = model_name.strip()
-                    start_model_string =''
-                    if  len(start_template ) >0 :
-                        start_model_string = "START_MODEL=" + start_template
-                    result_dir = helpers.generate_result_folder(username)
-                    ground_truth_dir = helpers.generate_image_folder(username)
-                    result_dir_model = os.path.join(result_dir, model_name)
-                    if os.path.exists(result_dir_model) :
-                        new_path = result_dir_model + '_'+ datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
-                        shutil.move(result_dir_model, new_path) 
-                    copy_command ='mv -v ./data/%s %s' %(model_name, result_dir ) 
-                    command_list = 'cd /usr/local/src/tesstrain && ' + 'make training MODEL_NAME=%s %s GROUND_TRUTH_DIR=%s %s'%(model_name, start_model_string, ground_truth_dir, more_parameters) + ' && ' +copy_command
-                    is_validate_command = True
-                    logfilename= helpers.get_current_log_name(username)
-                    the_file = open(logfilename, 'a') 
-
-                    if is_validate_command :
-                        # command_list ="dir && ping -t localhost"
-                        p = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-
-                else :
-                    command_list='empty model name'
-            except Exception as ex:
-                    command_list += '\n' + str(ex) 
-                    p = None
-            # print(command_list)
+        if session.get('logged_in') : 
+            logfilename =session["logfilename"];
+            if not logfilename :
+                redirect(url_for('login'))   
+             # print(command_list)
+             
             def generate():
-                if the_file :
-                    the_file.write(command_list + '\n')
-                yield "data:" + command_list  + "\n\n" + "\n\n"
-                if p :
-                    while(True):
-                        line = p.stdout.readline()
-                        if line:
-                            print(line)
-                            line =str(line, "utf-8")
-                            the_file.write(line + "\n")
-                            yield "data:" + line + "\n\n" + "\n\n"
-                        elif not p.poll():
-                            break
-                            
+                for line in Pygtail(logfilename, every_n=1):
+                    yield "data:" + str(line) + "\n\n"
+                    time.sleep(0.5) 
 
-                if the_file :
-                    the_file.close()
                 yield  "data:" + 'close' + "\n\n" + "\n\n"
                 
             return Response(generate(), mimetype= 'text/event-stream')

@@ -17,7 +17,6 @@ import urllib.parse
 root_path ='/var/www/tesseracttraining/files'
 root_path_tessdata ='/usr/local/src/tesstrain/usr/share/tessdata'
 # root_path_tessdata = 'c:/temp'
-training_in_process = False
 
 current_log_name =None
 
@@ -40,9 +39,6 @@ def session_scope():
 def get_session():
     return sessionmaker(bind=tabledef.engine)()
     
-def get_training_in_process():
-    return training_in_process
-
 
 def get_user():
     username = session['username']
@@ -165,18 +161,19 @@ def list_folder_image_text_pair(username) :
    
 def list_folder_result(username, folder) :
     global root_path 
-    final_path = generate_result_folder(username)
+    final_path = generate_result_folder(username, folder)
+    user_path = generate_image_folder(username)
     create_folder_if_not_exists(final_path)
     list_of_files=[]
     for dir_, _, files in os.walk(final_path):
         for file_name in files:
-            rel_dir = os.path.relpath(dir_, final_path)
+            rel_dir = os.path.relpath(dir_, user_path)
             if not rel_dir  or rel_dir == '.' :   
                 rel_file = file_name
             else :
                 rel_file = os.path.join(rel_dir, file_name)
                 
-            list_of_files.append([urllib.parse.quote_plus(rel_file, safe='') , rel_file, folder])
+            list_of_files.append([urllib.parse.quote_plus(rel_file, safe='') , rel_file, file_name])
     list_of_files.sort()
     return list_of_files
     
@@ -222,38 +219,7 @@ def get_all_template(username ) :
     list_of_files.sort()
     return list_of_files
     
-def start_training_process(username, template) :
-    training_in_process =True
-    log_filename =''
-    template_path =  os.path.join(root_path, '../template')
-    final_templatename= os.path.join(template_path, template)
-    image_folder  = generate_image_folder(username)
-    
-    processThread = Thread(target=start_training_action, args=(username, final_templatename, image_folder));
-    processThread.start()
- 
-    
-    
-def start_training_action(username, templatename, image_folder) :
-    global current_log_name,training_in_process
-    try :
-        log_folder = os.path.join(image_folder, 'log')
-        create_folder_if_not_exists (log_folder)
-        log_filename = 'log_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
-        current_log_name = os.path.join(log_folder, log_filename +'.log')
-        print (current_log_name)
-        logger.info(current_log_name)
-        with open(current_log_name, 'a') as the_file:
-            for index in range(200): 
-                the_file.write(datetime.utcnow().strftime('%Y%m%d_%H%M%S%f') +'\n')
-                the_file.flush()
-                time.sleep(1.5)
-    except Exception as e:
-        print (e)
-    finally :
-        training_in_process =False 
-        
-    
+   
 def save_image_text(username, image_filename, image_text) :
     final_path = get_txtfilename_from_image(username, image_filename)
     if not image_text : 
