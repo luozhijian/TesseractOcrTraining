@@ -265,12 +265,13 @@ def threaded_function_start_training(args):
     try :
         print ('in threaded_function_start_training')
         (is_validate_command, command_list, logfilename ) =args
-        with  open(logfilename, 'a')  as the_logfile  :
+        with  open(logfilename, 'a', encoding="utf-8")  as the_logfile  :
             try :
                 if training_in_process :
                     raise Exception( 'Another training already in process')
                 training_in_process = True
                 the_logfile.write( command_list)
+                the_logfile.flush()
                 if is_validate_command :
                     # command_list ="dir && ping -t localhost"
                     p = subprocess.Popen(command_list, stdout=the_logfile, stderr=subprocess.STDOUT, shell=True)
