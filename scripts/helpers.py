@@ -100,8 +100,8 @@ def generate_result_folder(username, folder_name) :
 def get_current_log_name(username ) :
     log_folder = os.path.join(root_path, username,'logs')
     create_folder_if_not_exists (log_folder)
-    log_filename = 'log_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')
-    return os.path.join(log_folder, log_filename +'.log')
+    log_filename = 'log_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')+'.log'
+    return (os.path.join(log_folder, log_filename), log_filename )
 
 def remove_special_char(s ):
     if not s :

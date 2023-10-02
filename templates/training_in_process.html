@@ -23,7 +23,7 @@ ul li{
 				
 
 <script type="text/javascript">
-	var source = new EventSource("/stream/{{logfilename}}");
+	var source = new EventSource("/stream");
 	source.onmessage = function(event) {
 		// $('#display').prepend(event.data);
 		$('#display_list').append('<li>'+event.data.trim()+'</li>');
