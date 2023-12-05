@@ -271,6 +271,8 @@ def threaded_function_start_training(args):
                     raise Exception( 'Another training already in process')
                 training_in_process = True
                 the_logfile.write( command_list)
+                the_logfile.write('\n\t\n\t\nThere is possible the log failed to refresh in middle, please do not refresh,\n but go Menu Logs to see the logs\n\t\n\t\n')
+ 
                 the_logfile.flush()
                 if is_validate_command :
                     # command_list ="dir && ping -t localhost"
