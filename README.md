@@ -1,1 +1,1 @@
-Tool to generate Tessaract OCR for special bitmap image to improve accurate
+Tool to generate Tesseract OCR for special bitmap image to improve accurate
