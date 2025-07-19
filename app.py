@@ -282,7 +282,7 @@ def threaded_function_start_training(args):
                 the_logfile.write('\n\nCompleted: %s'%logfilename)
             except Exception as e :
                 print(e)
-                the_logfile.write(e)
+                the_logfile.write(str(e))
                 the_logfile.flush()
                 if logger :
                     logger.exception(e)            
