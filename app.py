@@ -329,8 +329,8 @@ def start_training():
                 copy_command_1 ='mv -v ./data/%s %s' %(model_name, result_dir ) 
                 copy_command_2 ='mv -v ./data/%s.traineddata %s' %(model_name, result_dir ) 
                 copy_command = copy_command_1 +  ' &&  ' +  copy_command_2
-                command_list = 'cd /usr/local/src/tesstrain  && rm  -d -r -f data   && cp -r data.backup data && ' \
-                       + 'make training MODEL_NAME=%s %s GROUND_TRUTH_DIR=%s %s'%(model_name, start_model_string, ground_truth_dir, more_parameters) + ' && ' +copy_command
+                command_list = 'cd /usr/local/src/tesstrain  && rm  -d -r -f data   && mkdir data && ' \
+                       + 'make training TESSDATA=/usr/local/src/tesstrain/tessdata_best DATA_DIR=/usr/local/src/tesstrain/data MODEL_NAME=%s %s GROUND_TRUTH_DIR=%s %s'%(model_name, start_model_string, ground_truth_dir, more_parameters) + ' && ' +copy_command
                 is_validate_command = True
                 (logfilename, log_filename_only)= helpers.get_current_log_name(username)
                 session["logfilename"]=logfilename
