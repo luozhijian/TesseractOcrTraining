@@ -11,6 +11,9 @@ function error(type) {
 }
 
 var login = function() {
+  // Hide any previous error messages
+  $("#login-error").hide();
+  
   $.post({
     type: "POST",
     url: "/",
@@ -19,10 +22,20 @@ var login = function() {
     success(response){
       var status = JSON.parse(response)["status"];
 	  console.log("return status: " + status );
-      if (status === "Login successful") {
-		  location.reload(); 
+            if (status === "Login successful") {
+		  window.location.href = "/forum"; 
 		  }
-      else { error("login-input"); }
+      else { 
+        // Display the error message
+        $("#login-error-text").text(status);
+        $("#login-error").show();
+        error("login-input"); 
+      }
+    },
+    error: function() {
+      // Handle network/server errors
+      $("#login-error-text").text("Connection error. Please try again.");
+      $("#login-error").show();
     }
   });
 };

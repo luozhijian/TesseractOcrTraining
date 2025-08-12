@@ -76,14 +76,18 @@ def hash_password(password):
 
 
 def credentials_valid(username, password):
-    if username == 'demo' and password == '1':
-        return True
-    with session_scope() as s:
-        user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
-        if user:
-            return bcrypt.checkpw(password.encode('utf8'), user.password.encode('utf8'))
-        else:
-            return False
+    try:    
+        if username == 'demo' :
+            return password == '1'
+        with session_scope() as s:
+            user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
+            if user:
+                return bcrypt.checkpw(password.encode('utf8'), user.password.encode('utf8'))
+            else:
+                return False
+    except Exception :
+        return False
+
 def username_isvalid(username):
     """
     Validate username to ensure it's safe as a directory name on both Linux and Windows.

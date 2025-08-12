@@ -84,19 +84,18 @@ def login():
         if not session.get('logged_in'):
             form = forms.LoginForm(request.form)
             try :
-                if request.method == 'POST':
-                    username = request.form['username'].lower()
-                    password = request.form['password']
-                    if form.validate():
-                        if helpers.credentials_valid(username, password):
-                            session['logged_in'] = True
-                            session['username'] = username
-                            return json.dumps({'status': 'Login successful'})
-                        return json.dumps({'status': 'Invalid user/pass'})
-                    return json.dumps({'status': 'Both fields required'})
+                password = request.form['password']
+                username = request.form['username'].lower()
+                # if form.validate():
+                if username:
+                    if helpers.credentials_valid(username, password):
+                        session['logged_in'] = True
+                        session['username'] = username
+                        return json.dumps({'status': 'Login successful'})
+                    return json.dumps({'status': 'Invalid user/pass'})
+                return render_template('login.html', form=form)
             except :
-                pass #eat the error
-            return render_template('login.html', form=form)
+                return render_template('login.html', form=form)
 
         user = helpers.get_user()
         if user :
@@ -106,6 +105,7 @@ def login():
     except Exception as e :
         if logger :
             logger.exception(e)
+        return json.dumps({'status': str(e)})
 
 @app.route("/logout")
 def logout():
