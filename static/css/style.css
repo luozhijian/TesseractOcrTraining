@@ -30,7 +30,111 @@
 
  
 
-/* .hero-body */
-/* { */
-	/* background:Charcoal */
-/* } */
+/* Custom hero colors - uncomment the one you want */
+
+/* Modern purple gradient */
+.hero.is-custom-purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Modern teal */
+.hero.is-custom-teal {
+  background: linear-gradient(135deg, #1CD8D2 0%, #93EDC7 100%);
+}
+
+/* Elegant dark blue */
+.hero.is-custom-dark-blue {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+/* Warm sunset */
+.hero.is-custom-sunset {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* Mobile-friendly navbar styles */
+@media screen and (max-width: 1023px) {
+  .navbar-menu {
+    box-shadow: 0 8px 16px rgba(10,10,10,.1);
+    padding: 0.5rem 0;
+  }
+  
+  .navbar-item .field.is-grouped {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .navbar-item .field.is-grouped .control {
+    margin-bottom: 0.5rem;
+  }
+  
+  .navbar-item .field.is-grouped .control:last-child {
+    margin-bottom: 0;
+  }
+  
+  .navbar-item .button {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* For very small screens, make buttons even more mobile-friendly */
+@media screen and (max-width: 768px) {
+  .navbar-brand .subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .navbar-item .button {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  .navbar-brand img {
+    max-height: 2rem;
+  }
+}
+
+/* Alternative: Menu items wrapping to new lines instead of dropdown */
+@media screen and (max-width: 1023px) {
+  .navbar-menu.show-always {
+    display: flex !important;
+    background-color: white;
+    box-shadow: none;
+    padding: 0.5rem 0;
+  }
+  
+  .navbar-end {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .navbar-item .field.is-grouped {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .navbar-item .field.is-grouped .control {
+    margin: 0.25rem;
+    flex: 0 1 auto;
+  }
+  
+  .navbar-item .field.is-grouped .control .button {
+    min-width: 80px;
+    font-size: 0.9rem;
+  }
+}
+
+/* For smaller mobile screens, stack buttons vertically */
+@media screen and (max-width: 480px) {
+  .navbar-item .field.is-grouped .control {
+    margin: 0.2rem 0;
+    width: 100%;
+  }
+  
+  .navbar-item .field.is-grouped .control .button {
+    width: 100%;
+    min-width: auto;
+  }
+}

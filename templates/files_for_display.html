@@ -21,7 +21,14 @@
 <tbody>
   {% for result in results %}
 	<tr>
-	  <td> <a href="/download/{{ result[2] }}?path={{ result[0] }}" download>{{ result[1] }}</a></td>
+	  <td> 
+        {% set file_ext = result[1].split('.')[-1].lower() %}
+        {% if file_ext in ['txt', 'log', 'md', 'py', 'html', 'css', 'js', 'json', 'xml', 'csv'] %}
+          <a href="/view/{{ result[2] }}?path={{ result[0] }}" target="_blank">{{ result[1] }}</a>
+        {% else %}
+          <a href="/download/{{ result[2] }}?path={{ result[0] }}" target="_blank">{{ result[1] }}</a>
+        {% endif %}
+      </td>
 	</tr>
   {% endfor %}
 </tbody>
@@ -29,12 +36,6 @@
         </div>
       </div>    
     </div>
-
-    <div style="float:left;">	
-      <br/>
-      <br/>
-      <p> If you saw issues, please feel free to post in forum and I will check time by time. or you send to luozhijian@hotmail.com for questions</p>
-      </div>
   </div>
 </section>
 {% endblock %}

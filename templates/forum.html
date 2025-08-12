@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block body %}
+{% include "navbar.html" %}
+<title>Tesstrain Tesseract OCR Text Editing and Training - Forum</title>
+<section class="hero is-info is-bold is-small">
+  <div class="hero-body" style="padding: 0.1rem 1.5rem;">
+    <div class="container has-text-centered"><p style="margin-bottom: 0;">Share tips, ask questions, and help each other with OCR training{% if session.logged_in %} <a href="/forum/new" class="button is-primary is-small" style="margin-left: 10px;"><span class="icon"><i class="fa fa-plus"></i></span><span>New Post</span></a>{% endif %}</p></div>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    {% if posts %}
+      {% for post in posts %}
+      <div class="box">
+        <article class="media">
+          <div class="media-content">
+            <div class="content">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem;margin-bottom: 0.3rem;">
+                <div style="flex: 1; min-width: 0;">
+                  <strong><a href="/forum/post/{{ post.id }}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;">{{ post.title }}</a></strong>
+                </div>
+                <div style="display: flex; gap: 0.2rem; align-items: center; white-space: nowrap;">
+                  <small>by {{ post.author.username }}</small>
+                  <small>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                  {% if post.updated_at %}
+                    <small class="has-text-grey">(edited)</small>
+                  {% endif %}
+                  <a href="/forum/post/{{ post.id }}" style="text-decoration: none;">
+                    <small><span class="icon is-small"><i class="fa fa-comment"></i></span> {{ post.replies|length }}</small>
+                  </a>
+                  {% if session.logged_in and session.username == post.author.username %}
+                    <a href="/forum/post/{{ post.id }}/edit" style="text-decoration: none;">
+                      <small class="has-text-info"><span class="icon is-small"><i class="fa fa-edit"></i></span> Edit</small>
+                    </a>
+                  {% endif %}
+                  {% if session.logged_in and session.username.startswith('luozhijian') %}
+                    <form method="post" action="/forum/post/{{ post.id }}/importance" style="display: inline-block; margin-left: 0.5rem;">
+                      <small>Priority:</small>
+                      <input type="number" name="importance" value="{{ post.importance }}" min="0" max="999" style="width: 50px; font-size: 12px; padding: 2px; border: 1px solid #ccc; border-radius: 2px;">
+                      <button type="submit" style="background: none; border: none; color: #3273dc; font-size: 12px; cursor: pointer; padding: 2px;">✓</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </div>
+              <p>{{ post.content[:200] }}{% if post.content|length > 200 %}...{% endif %}</p>
+              {% if post.image_filename %}
+              <div style="margin-top: 1rem;">
+                <img src="/forum/image/{{ post.author.username }}/{{ post.image_filename | urlencode }}" alt="Post image" style="max-width: 300px; max-height: 200px; border-radius: 4px; border: 1px solid #ddd;">
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="box">
+        <div class="content has-text-centered">
+          <p><i class="fa fa-comments fa-3x has-text-grey-light"></i></p>
+          <p class="title is-4">No posts yet</p>
+          <p>Be the first to start a discussion!</p>
+          {% if session.logged_in %}
+          <a href="/forum/new" class="button is-primary">Create First Post</a>
+          {% else %}
+          <a href="/" class="button is-info">Login to Post</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="../static/js/scripts.js"></script>
+{% endblock %}
+

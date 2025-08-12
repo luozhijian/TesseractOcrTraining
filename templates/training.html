@@ -3,8 +3,8 @@
 {% include "navbar.html" %}
 
 
-<title>Tesseract OCR Training</title>
-<section class="hero is-primary is-bold is-small">
+<title>Tesstrain Tesseract OCR Text Editing and Training</title>
+<section class="hero is-info is-bold is-small">
   <div class="hero-body" min-width="600px">
     <div class="container has-text-centered">
 
@@ -66,6 +66,21 @@
  
 
     </div>
+	<div style="float:left;">	
+		<br/>
+		<br/>
+		<p>After training, please go to "Results" to download result, "Logs" to see log. </p>
+		<p> Common error you might see in training:</p>
+		<p>1. The bitmap you uploaded might not have a match text file, make sure text file is there
+		</p>
+		<p>2. You might put additional options in the Additional Options field, which is not supported by tesstrain
+			Solution: Check all option in https://github.com/tesseract-ocr/tesstrain/blob/main/tesstrain-main.sh
+		</p>
+		<p>3. It is good that you only have one letter per image instead put all letters in one image for training</p>
+		<p>4. If you provide a start Model name such as "eng", the result file will be more than 1G in size.  To save space, every 2AM, <span  style= background-color:red>the .traindata files will be deleted if it is more than 24 hours old	</span></p>
+		<p>5. If the log is not refresh, try to go log to click to see possible error message	</p>
+		<p>6. There is only one training process running at a time, if you want to train another model, you need to wait for the current training to finish</p>
+	</div>
   </div>
 </section>
 {% endblock %}

@@ -42,6 +42,8 @@ def get_session():
 
 def get_user():
     username = session['username']
+    if username == 'demo':
+        return tabledef.User(username='demo', password='1', email='demo@demo.com', id=0)  
     with session_scope() as s:
         user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
         return user
@@ -74,15 +76,122 @@ def hash_password(password):
 
 
 def credentials_valid(username, password):
+    if username == 'demo' and password == '1':
+        return True
     with session_scope() as s:
         user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
         if user:
             return bcrypt.checkpw(password.encode('utf8'), user.password.encode('utf8'))
         else:
             return False
-
+def username_isvalid(username):
+    """
+    Validate username to ensure it's safe as a directory name on both Linux and Windows.
+    
+    This function prevents:
+    1. Windows device names (CON, PRN, COM1, etc.) - would cause file system errors
+    2. Linux system names (root, sys, etc.) - could conflict with system accounts/directories
+    3. Path traversal attacks (.. patterns)
+    4. Invalid file system characters (< > : " | ? * \ /)
+    5. Control characters and null bytes
+    6. Names that start/end with dots or contain spaces
+    7. Names that don't start with alphanumeric characters
+    
+    Returns True if valid, False otherwise.
+    """
+    import re
+    import string
+    
+    if not username or not isinstance(username, str):
+        return False
+    
+    # Check length (1-30 characters)
+    if len(username) < 1 or len(username) > 30:
+        return False
+    
+    # Application-specific reserved usernames
+    app_reserved = ['demo', 'admin', 'administrator', 'test', 'guest', 'public']
+    if username.lower() in app_reserved:
+        return False
+    
+    # Windows reserved device names (case-insensitive)
+    # These names are reserved by Windows regardless of extension
+    windows_reserved = {
+        # Console and printer devices
+        'con', 'prn', 'aux', 'nul',
+        # Serial communication ports
+        'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9',
+        # Parallel ports (line printer)
+        'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9'
+    }
+    
+    # Linux reserved/problematic names
+    # These include system directories, device files, and common system users
+    linux_reserved = {
+        # System root user and common system accounts
+        'root', 'daemon', 'bin', 'sys', 'sync', 'games', 'man', 'lp', 'mail', 
+        'news', 'uucp', 'proxy', 'backup', 'list', 'irc', 'gnats', 'nobody',
+        'systemd', 'syslog', 'messagebus', 'uuidd', 'dnsmasq', 'sshd',
+        # Common service accounts
+        'www', 'apache', 'nginx', 'mysql', 'postgres', 'redis', 'mongodb',
+        'ftp', 'sftp', 'git', 'svn', 'jenkins', 'docker', 'kubernetes',
+        # Device files from /dev/
+        'null', 'zero', 'random', 'urandom', 'stdin', 'stdout', 'stderr', 
+        'tty', 'console', 'kmsg', 'mem', 'disk', 'loop', 'block',
+        # Important system directories
+        'home', 'tmp', 'var', 'etc', 'usr', 'bin', 'sbin', 'dev', 'proc', 
+        'sys', 'boot', 'lib', 'lib64', 'opt', 'mnt', 'media', 'run', 'srv',
+        # Common mount points and directories
+        'cdrom', 'floppy', 'usb', 'network', 'shared', 'public', 'temp',
+        'cache', 'log', 'logs', 'backup', 'archive', 'download', 'uploads'
+    }
+    
+    # Combine all reserved names
+    all_reserved = windows_reserved | linux_reserved
+    if username.lower() in all_reserved:
+        return False
+    
+    # Check for Windows reserved names with extensions (e.g., "con.txt")
+    base_name = username.lower().split('.')[0]
+    if base_name in windows_reserved:
+        return False
+    
+    # Invalid characters for both Windows and Linux paths
+    # Windows: < > : " | ? * \ / and ASCII 0-31
+    # Linux: only / and null character (but we'll be more restrictive)
+    invalid_chars = set('<>:"|?*\\/\x00')
+    invalid_chars.update(chr(i) for i in range(32))  # Control characters
+    
+    if any(char in invalid_chars for char in username):
+        return False
+    
+    # Path traversal prevention
+    if '..' in username or username.startswith('.') or username.endswith('.'):
+        return False
+    
+    # No leading or trailing whitespace
+    if username != username.strip():
+        return False
+    
+    # No spaces at all (safer for command line operations)
+    if ' ' in username:
+        return False
+    
+    # Must contain only alphanumeric characters, hyphens, and underscores
+    if not re.match(r'^[a-zA-Z0-9_-]+$', username):
+        return False
+    
+    # Must start with a letter or number (not underscore or hyphen)
+    if not username[0].isalnum():
+        return False
+    
+    # All checks passed
+    return True
+ 
 
 def username_taken(username):
+    if username == 'demo':
+        return False
     with session_scope() as s:
         return s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
 
@@ -204,6 +313,43 @@ def save_image_file(username, fileitem) :
         return temp_messgage
     except   Exception as e :
         raise e
+
+def save_forum_image_file(username, fileitem):
+    """Save forum image file to username/forum/ folder"""
+    # check if the file has been uploaded
+    try :
+        final_filename=''
+        if fileitem.filename:
+            # strip the leading path from the file name
+            fn = os.path.basename(fileitem.filename)
+            fn_lower = fn.lower()
+            final_filename = fn
+            need_convert_image_file = False 
+            #only png, tif is auto supported
+            if  fn_lower.endswith('.bmp') or fn_lower.endswith('.jpg') or fn_lower.endswith('.jpeg') or fn_lower.endswith('.ico')  or fn_lower.endswith('.tiff') :
+                final_filename =fn + '.png'
+                need_convert_image_file = True
+            
+            # Create forum subfolder
+            forum_folder = os.path.join(root_path, username, 'forum')
+            create_folder_if_not_exists(forum_folder)
+            
+            final_filename_fullpath = os.path.join(forum_folder, final_filename)
+           # open read and write the file into the server
+            if need_convert_image_file :
+                im = Image.open(fileitem)
+                im.save(final_filename_fullpath)
+            else :
+                open(final_filename_fullpath, 'wb').write(fileitem.read())
+        temp_messgage =  final_filename + ' saved'
+        logger.info(temp_messgage)
+        return temp_messgage
+    except   Exception as e :
+        raise e
+
+def generate_forum_image_folder(username):
+    """Generate the forum image folder path for a user"""
+    return os.path.join(root_path, username, 'forum')
 
 # return all current tesseract train data to begin with            
 def get_all_template(username ) :

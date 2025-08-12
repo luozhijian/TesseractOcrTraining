@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block body %}
+{% include "navbar.html" %}
+<title>{{ post.title }} - Forum</title>
+<section class="hero is-info is-bold is-small">
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      <div id="settings" class="settings-box">
+        <div class="settings-area">    
+          <h1 class="title">{{ post.title }}</h1>   
+          <nav class="breadcrumb is-centered" aria-label="breadcrumbs">
+            <ul>
+              <li><a href="/forum">Forum</a></li>
+              <li class="is-active"><a href="#" aria-current="page">{{ post.title }}</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>    
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <!-- Original Post -->
+    <div class="box">
+      <article class="media">
+        <div class="media-content">
+          <div class="content">
+            <p>
+              <strong>{{ post.author.username }}</strong>
+              <br>
+              <small>Posted on {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+              {% if post.updated_at %}
+                <small class="has-text-grey">(edited {{ post.updated_at.strftime('%Y-%m-%d %H:%M') }})</small>
+              {% endif %}
+            </p>
+            <div class="content">
+              {{ post.content | replace('\n', '<br>') | safe }}
+            </div>
+            {% if post.image_filename %}
+            <div class="content">
+              <img src="/forum/image/{{ post.author.username }}/{{ post.image_filename | urlencode }}" alt="Post image" style="max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #ddd; margin-top: 1rem;">
+            </div>
+            {% endif %}
+          </div>
+          <nav class="level is-mobile">
+            <div class="level-left"></div>
+            <div class="level-right">
+              {% if session.logged_in and session.username == post.author.username %}
+              <a class="level-item has-text-info" href="/forum/post/{{ post.id }}/edit">
+                <span class="icon is-small"><i class="fa fa-edit"></i></span>
+                <span>Edit Post</span>
+              </a>
+              {% endif %}
+              {% if session.logged_in and session.username.startswith('luozhijian') %}
+              <div class="level-item">
+                <form method="post" action="/forum/post/{{ post.id }}/importance" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <small>Priority:</small>
+                  <input type="number" name="importance" value="{{ post.importance }}" min="0" max="999" style="width: 60px; font-size: 14px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                  <button type="submit" class="button is-small is-primary">
+                    <span class="icon is-small"><i class="fa fa-save"></i></span>
+                  </button>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+          </nav>
+        </div>
+      </article>
+    </div>
+
+    <!-- Replies -->
+    {% if replies %}
+      <h3 class="title is-4">Replies ({{ replies|length }})</h3>
+      {% for reply in replies %}
+      <div class="box">
+        <article class="media">
+          <div class="media-content">
+            <div class="content">
+              <p>
+                <strong>{{ reply.author.username }}</strong>
+                <br>
+                <small>{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                {% if reply.updated_at %}
+                  <small class="has-text-grey">(edited {{ reply.updated_at.strftime('%Y-%m-%d %H:%M') }})</small>
+                {% endif %}
+              </p>
+              <div class="content">
+                {{ reply.content | replace('\n', '<br>') | safe }}
+              </div>
+              {% if reply.image_filename %}
+              <div class="content">
+                <img src="/forum/image/{{ reply.author.username }}/{{ reply.image_filename | urlencode }}" alt="Reply image" style="max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #ddd; margin-top: 1rem;">
+              </div>
+              {% endif %}
+            </div>
+            {% if session.logged_in and session.username == reply.author.username %}
+            <nav class="level is-mobile">
+              <div class="level-left"></div>
+              <div class="level-right">
+                <a class="level-item has-text-info" href="/forum/reply/{{ reply.id }}/edit">
+                  <span class="icon is-small"><i class="fa fa-edit"></i></span>
+                  <span>Edit</span>
+                </a>
+              </div>
+            </nav>
+            {% endif %}
+          </div>
+        </article>
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Reply Form -->
+    {% if session.logged_in %}
+    <div class="box">
+      <h4 class="title is-5">Add a Reply</h4>
+      <form action="/forum/post/{{ post.id }}/reply" method="post" enctype="multipart/form-data">
+        <div class="field">
+          <label class="label">Your Reply</label>
+          <div class="control">
+            <textarea class="textarea" name="content" rows="4" placeholder="Write your reply here..." required></textarea>
+          </div>
+        </div>
+        
+        <div class="field">
+          <label class="label">Attach Image (Optional)</label>
+          <div class="control">
+            <div class="file has-name">
+              <label class="file-label">
+                <input class="file-input" type="file" name="image" accept="image/*" id="reply-image-input">
+                <span class="file-cta">
+                  <span class="file-icon">
+                    <i class="fa fa-upload"></i>
+                  </span>
+                  <span class="file-label">
+                    Choose image…
+                  </span>
+                </span>
+                <span class="file-name" id="reply-file-name">
+                  No file selected
+                </span>
+              </label>
+            </div>
+          </div>
+          <p class="help">Upload an image to illustrate your reply. Supported formats: PNG, JPG, BMP, TIF (max size recommended: 5MB)</p>
+        </div>
+        
+        <div class="field">
+          <div class="control">
+            <button type="submit" class="button is-primary">
+              <span class="icon">
+                <i class="fa fa-reply"></i>
+              </span>
+              <span>Post Reply</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <div class="box">
+      <div class="content has-text-centered">
+        <p>Please <a href="/">login</a> to reply to this post.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="../static/js/scripts.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const replyFileInput = document.getElementById('reply-image-input');
+  const replyFileName = document.getElementById('reply-file-name');
+  
+  if (replyFileInput && replyFileName) {
+    replyFileInput.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        replyFileName.textContent = this.files[0].name;
+      } else {
+        replyFileName.textContent = 'No file selected';
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+

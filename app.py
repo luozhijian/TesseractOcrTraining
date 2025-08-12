@@ -3,6 +3,7 @@
 from scripts import tabledef
 from scripts import forms
 from scripts import helpers
+from scripts import version
 from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, Response
 from pygtail import Pygtail
 import json
@@ -24,6 +25,13 @@ werkzeug.serving._log_add_style = False
 app = Flask(__name__)
 
 app.secret_key = 'TesseractOcrTraining' # Generic key for dev purposes only
+
+# Make version information available to all templates
+@app.context_processor
+def inject_version():
+    return dict(app_version=version.get_version(), 
+                app_version_info=version.get_full_version_info())
+
 logger =None 
 
 logger = logging.getLogger('MainProgram')
@@ -115,6 +123,10 @@ def signup():
             password = helpers.hash_password(request.form['password'])
             email = request.form['email']
             if form.validate():
+                # Validate username for path safety
+                if not helpers.username_isvalid(username):
+                    return json.dumps({'status': 'Invalid username. Use only letters, numbers, hyphens, and underscores. Must start with letter/number. not windows or linux reserva'})
+                
                 if not helpers.username_taken(username):
                     helpers.add_user(username, password, email)
                     session['logged_in'] = True
@@ -190,8 +202,55 @@ def download(name):
     # print("resultfiles did not login forward to login")       
     logger.info("resultfiles did not login forward to login")       
     return redirect(url_for('login'))
+
+@app.route('/view/<name>')
+def view_file(name):
+    """View text file content in browser"""
+    if session.get('logged_in'):
+        username = helpers.get_username()
+        result_folder = helpers.generate_image_folder(username)
+        filename_with_path = request.args.get("path")
+        filename_with_path_unquoted = urllib.parse.unquote_plus(filename_with_path)
+        path_part, filenamePart = os.path.split(filename_with_path_unquoted)
+        real_folder = os.path.join(result_folder, path_part)
         
-        
+        path_real_folder = Path(real_folder)
+        path_result_folder = Path(result_folder)
+        if (not path_part) or path_part == "." or path_result_folder in path_real_folder.parents:
+            file_path = os.path.join(real_folder, filenamePart)
+            
+            # Check if file exists and is a text file
+            if os.path.exists(file_path):
+                _, ext = os.path.splitext(filenamePart.lower())
+                if ext in ['.txt', '.log', '.md', '.py', '.html', '.css', '.js', '.json', '.xml', '.csv']:
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        return render_template('file_viewer.html', 
+                                             filename=filenamePart, 
+                                             content=content,
+                                             file_type=ext[1:] if ext else 'text')
+                    except UnicodeDecodeError:
+                        # If UTF-8 fails, try with different encoding
+                        try:
+                            with open(file_path, 'r', encoding='latin-1') as f:
+                                content = f.read()
+                            return render_template('file_viewer.html', 
+                                                 filename=filenamePart, 
+                                                 content=content,
+                                                 file_type=ext[1:] if ext else 'text')
+                        except Exception as e:
+                            return f"Error reading file: {str(e)}", 500
+                else:
+                    # For non-text files, redirect to download
+                    return redirect(url_for('download', name=name, path=filename_with_path))
+            else:
+                return "File not found", 404
+        else:
+            raise Exception("Unknown file name: %s/%s" % (name, filename_with_path_unquoted))
+    
+    logger.info("view_file did not login forward to login")
+    return redirect(url_for('login'))
 
 # -------- results --------------- #
 @app.route('/results', methods=['GET', 'POST'])
@@ -214,11 +273,357 @@ def logs():
         # list the content in logs folder, and for download
         folder_type =  'logs' 
         results = helpers.list_folder_result(user.username, folder_type  )
-        return render_template('files_for_download.html', results=results, folder_type =folder_type)
+        return render_template('files_for_display.html', results=results, folder_type =folder_type)
     logger.info("results did not login forward to login")       
     return redirect(url_for('login'))
     
    
+# -------- serve forum images --------------- #
+@app.route('/forum/image/<username>/<filename>')
+def forum_image(username, filename):
+    """Serve forum images - accessible to everyone"""
+    try:
+        forum_image_folder = helpers.generate_forum_image_folder(username)
+        return send_from_directory(forum_image_folder, filename)
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+@app.route('/forum/image/<int:post_id>')
+def forum_image_by_post(post_id):
+    """Alternative route to serve forum images by post ID - accessible to everyone"""
+    try:
+        with helpers.session_scope() as db_session:
+            post = db_session.query(tabledef.ForumPost).filter_by(id=post_id).first()
+            if not post or not post.image_filename:
+                return render_template('404.html'), 404
+            
+            forum_image_folder = helpers.generate_forum_image_folder(post.author.username)
+            return send_from_directory(forum_image_folder, post.image_filename)
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+# ======== Forum ================================= #
+@app.route('/forum', methods=['GET'])
+def forum():
+    """View all forum posts - accessible to everyone"""
+    try:
+        with helpers.session_scope() as db_session:
+            posts = db_session.query(tabledef.ForumPost).order_by(
+                tabledef.ForumPost.importance.desc(),
+                tabledef.ForumPost.created_at.desc()
+            ).all()
+            return render_template('forum.html', posts=posts)
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+@app.route('/forum/post/<int:post_id>', methods=['GET'])
+def forum_post(post_id):
+    """View a specific forum post with replies - accessible to everyone"""
+    try:
+        with helpers.session_scope() as db_session:
+            post = db_session.query(tabledef.ForumPost).filter_by(id=post_id).first()
+            if not post:
+                return render_template('404.html'), 404
+            replies = db_session.query(tabledef.ForumReply).filter_by(post_id=post_id).order_by(tabledef.ForumReply.created_at.asc()).all()
+            return render_template('forum_post.html', post=post, replies=replies)
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+@app.route('/forum/new', methods=['GET', 'POST'])
+def forum_new_post():
+    """Create a new forum post - requires login"""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    try:
+        if request.method == 'POST':
+            title = request.form['title']
+            content = request.form['content']
+            
+            if title and content:
+                user = helpers.get_user()
+                image_filename = None
+                
+                # Handle image upload if provided
+                if 'image' in request.files:
+                    image_file = request.files['image']
+                    if image_file and image_file.filename:
+                        try:
+                            # Use new forum-specific save function
+                            saved_message = helpers.save_forum_image_file(user.username, image_file)
+                            # Extract just the filename from the message
+                            image_filename = saved_message.replace(' saved', '')
+                        except Exception as img_error:
+                            if logger:
+                                logger.warning(f"Failed to save forum image: {img_error}")
+                            # Continue creating post even if image upload fails
+                
+                with helpers.session_scope() as db_session:
+                    new_post = tabledef.ForumPost(
+                        title=title,
+                        content=content,
+                        author_id=user.id,
+                        created_at=datetime.datetime.now(),
+                        image_filename=image_filename,
+                        importance=0
+                    )
+                    db_session.add(new_post)
+                    db_session.commit()
+                    return redirect(url_for('forum_post', post_id=new_post.id))
+            
+        return render_template('forum_new_post.html')
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+@app.route('/forum/post/<int:post_id>/reply', methods=['POST'])
+def forum_reply(post_id):
+    """Add a reply to a forum post - requires login"""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    try:
+        content = request.form['content']
+        
+        if content:
+            user = helpers.get_user()
+            image_filename = None
+            
+            # Handle image upload if provided
+            if 'image' in request.files:
+                image_file = request.files['image']
+                if image_file and image_file.filename:
+                    try:
+                        # Use forum-specific save function
+                        saved_message = helpers.save_forum_image_file(user.username, image_file)
+                        # Extract just the filename from the message
+                        image_filename = saved_message.replace(' saved', '')
+                    except Exception as img_error:
+                        if logger:
+                            logger.warning(f"Failed to save forum reply image: {img_error}")
+                        # Continue creating reply even if image upload fails
+            
+            with helpers.session_scope() as db_session:
+                # Check if post exists
+                post = db_session.query(tabledef.ForumPost).filter_by(id=post_id).first()
+                if not post:
+                    return render_template('404.html'), 404
+                
+                new_reply = tabledef.ForumReply(
+                    content=content,
+                    author_id=user.id,
+                    post_id=post_id,
+                    created_at=datetime.datetime.now(),
+                    image_filename=image_filename
+                )
+                db_session.add(new_reply)
+                db_session.commit()
+        
+        return redirect(url_for('forum_post', post_id=post_id))
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+@app.route('/forum/post/<int:post_id>/importance', methods=['POST'])
+def update_post_importance(post_id):
+    """Update post importance - only for users starting with 'luozhijian'"""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    try:
+        # Check if user is authorized (username starts with 'luozhijian')
+        username = session.get('username', '')
+        if not username.startswith('luozhijian'):
+            return redirect(url_for('forum'))
+        
+        importance = request.form.get('importance', 0)
+        try:
+            importance = int(importance)
+        except ValueError:
+            importance = 0
+        
+        with helpers.session_scope() as db_session:
+            post = db_session.query(tabledef.ForumPost).filter_by(id=post_id).first()
+            if post:
+                post.importance = importance
+                db_session.commit()
+        
+        return redirect(url_for('forum'))
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+@app.route('/forum/post/<int:post_id>/edit', methods=['GET', 'POST'])
+def forum_edit_post(post_id):
+    """Edit a forum post - only by original author"""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    try:
+        with helpers.session_scope() as db_session:
+            post = db_session.query(tabledef.ForumPost).filter_by(id=post_id).first()
+            if not post:
+                return render_template('404.html'), 404
+            
+            user = helpers.get_user()
+            if post.author_id != user.id:
+                return render_template('403.html'), 403
+            
+            if request.method == 'POST':
+                title = request.form['title']
+                content = request.form['content']
+                
+                if title and content:
+                    post.title = title
+                    post.content = content
+                    post.updated_at = datetime.datetime.now()
+                    
+                    # Handle image changes
+                    remove_image = request.form.get('remove_image')
+                    new_image = request.files.get('image')
+                    
+                    # If user wants to remove current image
+                    if remove_image == '1':
+                        if post.image_filename:
+                            # Delete old image file
+                            try:
+                                old_image_path = os.path.join(
+                                    helpers.generate_forum_image_folder(post.author.username),
+                                    post.image_filename
+                                )
+                                if os.path.exists(old_image_path):
+                                    os.remove(old_image_path)
+                            except Exception as e:
+                                if logger:
+                                    logger.warning(f"Failed to delete old forum image: {e}")
+                        post.image_filename = None
+                    
+                    # If user uploaded a new image
+                    elif new_image and new_image.filename:
+                        try:
+                            # Delete old image file if it exists
+                            if post.image_filename:
+                                old_image_path = os.path.join(
+                                    helpers.generate_forum_image_folder(post.author.username),
+                                    post.image_filename
+                                )
+                                if os.path.exists(old_image_path):
+                                    os.remove(old_image_path)
+                            
+                            # Save new image
+                            saved_message = helpers.save_forum_image_file(post.author.username, new_image)
+                            post.image_filename = saved_message.replace(' saved', '')
+                        except Exception as img_error:
+                            if logger:
+                                logger.warning(f"Failed to save new forum image: {img_error}")
+                    
+                    db_session.commit()
+                    return redirect(url_for('forum_post', post_id=post.id))
+            
+            return render_template('forum_edit_post.html', post=post)
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+@app.route('/forum/reply/<int:reply_id>/edit', methods=['GET', 'POST'])
+def forum_edit_reply(reply_id):
+    """Edit a forum reply - only by original author"""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    try:
+        with helpers.session_scope() as db_session:
+            reply = db_session.query(tabledef.ForumReply).filter_by(id=reply_id).first()
+            if not reply:
+                return render_template('404.html'), 404
+            
+            user = helpers.get_user()
+            if reply.author_id != user.id:
+                return render_template('403.html'), 403
+            
+            if request.method == 'POST':
+                content = request.form['content']
+                
+                if content:
+                    reply.content = content
+                    reply.updated_at = datetime.datetime.now()
+                    
+                    # Handle image changes
+                    remove_image = request.form.get('remove_image')
+                    new_image = request.files.get('image')
+                    
+                    # If user wants to remove current image
+                    if remove_image == '1':
+                        if reply.image_filename:
+                            # Delete old image file
+                            try:
+                                old_image_path = os.path.join(
+                                    helpers.generate_forum_image_folder(reply.author.username),
+                                    reply.image_filename
+                                )
+                                if os.path.exists(old_image_path):
+                                    os.remove(old_image_path)
+                            except Exception as e:
+                                if logger:
+                                    logger.warning(f"Failed to delete old forum reply image: {e}")
+                        reply.image_filename = None
+                    
+                    # If user uploaded a new image
+                    elif new_image and new_image.filename:
+                        try:
+                            # Delete old image file if it exists
+                            if reply.image_filename:
+                                old_image_path = os.path.join(
+                                    helpers.generate_forum_image_folder(reply.author.username),
+                                    reply.image_filename
+                                )
+                                if os.path.exists(old_image_path):
+                                    os.remove(old_image_path)
+                            
+                            # Save new image
+                            saved_message = helpers.save_forum_image_file(reply.author.username, new_image)
+                            reply.image_filename = saved_message.replace(' saved', '')
+                        except Exception as img_error:
+                            if logger:
+                                logger.warning(f"Failed to save new forum reply image: {img_error}")
+                    
+                    db_session.commit()
+                    return redirect(url_for('forum_post', post_id=reply.post_id))
+            
+            return render_template('forum_edit_reply.html', reply=reply)
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+# -------- version information --------------- #
+@app.route('/version')
+def app_version():
+    """Return version information as JSON"""
+    return version.get_full_version_info()
+
+@app.route('/api/version')
+def api_version():
+    """API endpoint for version information"""
+    return {
+        "application": "Tesseract OCR Training",
+        "version": version.get_version(),
+        "build_date": version.BUILD_DATE,
+        "release_name": version.RELEASE_NAME
+    }
+
 # -------- upload image --------------- #
 @app.route('/upload', methods=['POST'])
 def upload():

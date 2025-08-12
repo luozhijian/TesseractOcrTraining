@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block body %}
+{% include "navbar.html" %}
+<title>{{ filename }} - File Viewer</title>
+<div style="background-color: #3273dc; color: white; padding: 0.5rem 0; text-align: center;">
+  <strong>File Viewer: {{ filename }}</strong> <span class="tag is-light" style="margin-left: 0.5rem;">{{ file_type }}</span>
+</div>
+
+<section class="section" style="padding-top: 1rem; padding-bottom: 1rem;">
+  <div class="container">
+    <div class="box" style="padding: 1rem;">
+      <div class="content">
+        <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; padding: 1rem; max-height: 75vh; overflow-y: auto;">
+          <pre style="white-space: pre-wrap; word-wrap: break-word; margin: 0; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4;">{{ content }}</pre>
+        </div>
+        
+        <div class="buttons" style="margin-top: 1rem;">
+          <button onclick="copyToClipboard()" class="button is-primary is-small">
+            <span class="icon">
+              <i class="fa fa-copy"></i>
+            </span>
+            <span>Copy Content</span>
+          </button>
+          <a href="javascript:history.back()" class="button is-light is-small">
+            <span class="icon">
+              <i class="fa fa-arrow-left"></i>
+            </span>
+            <span>Back</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function copyToClipboard() {
+  const content = document.querySelector('pre').textContent;
+  navigator.clipboard.writeText(content).then(function() {
+    // Show success message
+    const button = document.querySelector('.button.is-primary');
+    const originalText = button.querySelector('span:last-child').textContent;
+    button.querySelector('span:last-child').textContent = 'Copied!';
+    button.classList.remove('is-primary');
+    button.classList.add('is-success');
+    
+    setTimeout(function() {
+      button.querySelector('span:last-child').textContent = originalText;
+      button.classList.remove('is-success');
+      button.classList.add('is-primary');
+    }, 2000);
+  }, function(err) {
+    console.error('Could not copy text: ', err);
+    alert('Failed to copy to clipboard');
+  });
+}
+</script>
+
+{% endblock %}
+{% block scripts %}
+<script src="../static/js/scripts.js"></script>
+{% endblock %}

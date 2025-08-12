@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block body %}
+{% include "navbar.html" %}
+<title>New Forum Post - Tesseract OCR Training</title>
+<section class="hero is-info is-bold is-small">
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      <div id="settings" class="settings-box">
+        <div class="settings-area">    
+          <h1 class="title">Create New Post</h1>   
+          <nav class="breadcrumb is-centered" aria-label="breadcrumbs">
+            <ul>
+              <li><a href="/forum">Forum</a></li>
+              <li class="is-active"><a href="#" aria-current="page">New Post</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>    
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="box">
+          <form action="/forum/new" method="post" enctype="multipart/form-data">
+            <div class="field">
+              <label class="label">Title</label>
+              <div class="control">
+                <input class="input" type="text" name="title" placeholder="Enter a descriptive title for your post" required maxlength="200">
+              </div>
+              <p class="help">Choose a clear, descriptive title that summarizes your question or topic.</p>
+            </div>
+
+            <div class="field">
+              <label class="label">Content</label>
+              <div class="control">
+                <textarea class="textarea" name="content" rows="8" placeholder="Write your post content here..." required></textarea>
+              </div>
+              <p class="help">Provide detailed information, questions, or discussion points. You can use line breaks for formatting.</p>
+            </div>
+
+            <div class="field">
+              <label class="label">Attach Image (Optional)</label>
+              <div class="control">
+                <div class="file has-name">
+                  <label class="file-label">
+                    <input class="file-input" type="file" name="image" accept="image/*">
+                    <span class="file-cta">
+                      <span class="file-icon">
+                        <i class="fa fa-upload"></i>
+                      </span>
+                      <span class="file-label">
+                        Choose a file…
+                      </span>
+                    </span>
+                    <span class="file-name">
+                      No file selected
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <p class="help">Upload an image to illustrate your post. Supported formats: PNG, JPG, BMP, TIF (max size recommended: 5MB)</p>
+            </div>
+
+            <div class="field is-grouped">
+              <div class="control">
+                <button type="submit" class="button is-primary">
+                  <span class="icon">
+                    <i class="fa fa-plus"></i>
+                  </span>
+                  <span>Create Post</span>
+                </button>
+              </div>
+              <div class="control">
+                <a href="/forum" class="button is-light">
+                  <span class="icon">
+                    <i class="fa fa-times"></i>
+                  </span>
+                  <span>Cancel</span>
+                </a>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Posting Guidelines -->
+        <div class="box">
+          <h4 class="title is-5">Posting Guidelines</h4>
+          <div class="content">
+            <ul>
+              <li><strong>Be helpful:</strong> Share your knowledge and experience with OCR training</li>
+              <li><strong>Stay on topic:</strong> Keep discussions related to Tesseract OCR and text recognition</li>
+              <li><strong>Be respectful:</strong> Treat all community members with courtesy</li>
+              <li><strong>Search first:</strong> Check if your question has already been answered</li>
+              <li><strong>Provide details:</strong> Include relevant information to help others assist you</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="../static/js/scripts.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInput = document.querySelector('.file-input');
+  const fileName = document.querySelector('.file-name');
+  
+  fileInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      fileName.textContent = this.files[0].name;
+    } else {
+      fileName.textContent = 'No file selected';
+    }
+  });
+});
+</script>
+{% endblock %}
+
