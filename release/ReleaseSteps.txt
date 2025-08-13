@@ -1,0 +1,26 @@
+#show date time
+date
+#check if there is someone use it
+tail -f /var/log/tesseracttraining/tesseracttraining.log
+
+#go to release folder
+cd ~/src/TesseractOcrTraining
+
+sudo systemctl stop tesstrain
+
+git pull
+
+#if there is release script
+#cd release/version
+#sudo python3 version_upgrade.python3
+
+#restart tesstrain 
+sudo systemctl restart tesstrain
+
+#some sample code 
+#sudo crontab -l
+#sudo crontab -l
+#~/src/tesstrainenv
+
+2 2 * * * find /var/www/tesseracttraining -name "*.traineddata_20*" -type f -mtime +2 -delete
+4 2 * * * find /var/www/tesseracttraining -name "*.checkpoint" -type f -mtime +2 -delete
