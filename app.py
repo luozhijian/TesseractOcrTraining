@@ -59,8 +59,7 @@ def favicon():
     
 @app.errorhandler(404)
 def page_not_found(e):
-    # your processing here
-    return ''
+    return render_template('404.html'), 404
 
 @app.errorhandler(Exception)
 def handle_exception(e):
@@ -137,6 +136,47 @@ def signup():
             return json.dumps({'status': 'User/Pass required'})
         return render_template('login.html', form=form)
     return redirect(url_for('login'))
+
+# -------- Robots & Sitemap (SEO) --------------- #
+@app.route('/robots.txt')
+def robots_txt():
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Sitemap: " + request.url_root.rstrip('/') + "/sitemap.xml",
+    ]
+    return Response("\n".join(lines), mimetype='text/plain')
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    try:
+        pages = []
+        base_url = request.url_root.rstrip('/')
+        # Public pages
+        pages.extend([
+            (base_url + '/', 'weekly'),
+            (base_url + '/forum', 'daily'),
+        ])
+        # Forum posts
+        with helpers.session_scope() as db_session:
+            posts = db_session.query(tabledef.ForumPost).order_by(tabledef.ForumPost.created_at.desc()).limit(100).all()
+            for post in posts:
+                pages.append((f"{base_url}/forum/post/{post.id}", 'weekly'))
+        xml_parts = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        ]
+        for loc, freq in pages:
+            xml_parts.append('<url>')
+            xml_parts.append(f'<loc>{loc}</loc>')
+            xml_parts.append(f'<changefreq>{freq}</changefreq>')
+            xml_parts.append('</url>')
+        xml_parts.append('</urlset>')
+        return Response("".join(xml_parts), mimetype='application/xml')
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return Response('', mimetype='application/xml')
 
 
 # -------- Settings ---------------------------------------------------------- #

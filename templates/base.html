@@ -3,6 +3,30 @@
   <head>
     <meta charset="utf-8">
     <meta name="Jim Luo" content="Tesseract OCR Training">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Tesseract Training Online | Tesstrain OCR Model Trainer{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Train Tesseract OCR models online with Tesstrain. Upload images, edit ground-truth text, and start Tesseract training in your browser.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}Tesseract training, train Tesseract, Tesstrain, Tesseract OCR training, Training Tesseract, Tesseract train{% endblock %}">
+    <link rel="canonical" href="{{ request.base_url }}">
+    <meta property="og:title" content="{% block og_title %}Tesseract Training Online | Tesstrain OCR Model Trainer{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Train Tesseract OCR models online with Tesstrain.{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.base_url }}">
+    <meta property="og:image" content="https://raw.githubusercontent.com/luozhijian/TesseractOcrTraining/main/media/tesstrain_logo.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}Tesseract Training Online | Tesstrain OCR Model Trainer{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Train Tesseract OCR models online with Tesstrain.{% endblock %}">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/luozhijian/TesseractOcrTraining/main/media/tesstrain_logo.png">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Tesseract OCR Training (Tesstrain)",
+      "url": "{{ request.url_root }}",
+      "description": "Train Tesseract OCR models online with Tesstrain.",
+      "inLanguage": "en"
+    }
+    </script>
 	<style>
 	body {
   background-color: black;
