@@ -260,11 +260,12 @@ def list_folder_image_text_pair(username) :
             continue 
         one_file_lower = one_file.lower()
         if one_file_lower.endswith('tif') or one_file_lower.endswith('png') :
-            text_filename = get_txtfilename_only_from_image(one_file)
+            text_filename = get_txtfilename_only_from_image(one_file).lower()
             if text_filename in hash_set :
-                full_text_filename = os.path.join(final_path, text_filename)
+                text_filename_case_sensititive = hash_set[text_filename] 
+                full_text_filename = os.path.join(final_path, text_filename_case_sensititive)
                 text_content = open(full_text_filename, 'r').read()
-                result.append( (one_file, hash_set[text_filename], text_content) )
+                result.append( (one_file, text_filename_case_sensititive, text_content) )
             else :
                 result.append( (one_file, '', '') )
         elif  not ( one_file_lower.endswith('.gt.txt')  or one_file_lower.endswith('.lstmf')  or one_file_lower.endswith('.box') ) :

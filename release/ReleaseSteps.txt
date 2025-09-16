@@ -6,9 +6,13 @@ tail -f /var/log/tesseracttraining/tesseracttraining.log
 #go to release folder
 cd ~/src/TesseractOcrTraining
 
-sudo systemctl stop tesstrain
 
 git pull
+
+sudo systemctl restart tesstrain
+
+#sudo systemctl stop tesstrain
+
 
 #if there is release script
 #cd release/version
