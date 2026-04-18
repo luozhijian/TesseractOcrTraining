@@ -4,7 +4,7 @@ from scripts import tabledef
 from scripts import forms
 from scripts import helpers
 from scripts import version
-from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, Response
+from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, Response, send_file, after_this_request
 from pygtail import Pygtail
 import json
 import sys
@@ -17,6 +17,8 @@ import urllib.parse
 from werkzeug.exceptions import HTTPException
 from pathlib import Path
 import shutil
+import zipfile
+import tempfile
 import werkzeug
 import datetime
 from threading import Thread
@@ -178,6 +180,33 @@ def sitemap_xml():
             logger.exception(e)
         return Response('', mimetype='application/xml')
 
+@app.route('/users', methods=['GET'])
+def users():
+    """View all users with created and last access dates - accessible to everyone"""
+    try:
+        with helpers.session_scope() as db_session:
+            db_users = db_session.query(tabledef.User).order_by(tabledef.User.username.asc()).all()
+            users_with_dates = []
+            for db_user in db_users:
+                user_folder = helpers.generate_image_folder(db_user.username)
+                created_date = None
+                last_access_date = None
+                if os.path.isdir(user_folder):
+                    created_date = datetime.datetime.fromtimestamp(os.path.getctime(user_folder))
+                    last_access_date = datetime.datetime.fromtimestamp(os.path.getatime(user_folder))
+                users_with_dates.append({
+                    'username': db_user.username,
+                    'email': db_user.email,
+                    'created_date': created_date,
+                    'last_access_date': last_access_date,
+                })
+
+            return render_template('users.html', users=users_with_dates)
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
 
 # -------- Settings ---------------------------------------------------------- #
 @app.route('/settings', methods=['GET', 'POST'])
@@ -208,6 +237,75 @@ def images():
     except Exception as e :
         if logger :
             logger.exception(e)
+
+@app.route('/images/download_all_zip', methods=['GET'])
+def download_all_zip():
+    """Download all files in user's root image folder (no subfolders) as a zip."""
+    try:
+        if session.get('logged_in'):
+            username = helpers.get_username()
+            user_folder = helpers.generate_image_folder(username)
+            zip_basename = f"{username}_images.zip"
+            fd, zip_path = tempfile.mkstemp(suffix=".zip", prefix=f"{username}_", dir=user_folder)
+            os.close(fd)
+            try:
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    for entry_name in os.listdir(user_folder):
+                        if entry_name.endswith('.zip'):
+                            continue
+                        entry_full_path = os.path.join(user_folder, entry_name)
+                        if os.path.isfile(entry_full_path):
+                            zip_file.write(entry_full_path, arcname=entry_name)
+
+                @after_this_request
+                def remove_created_zip(response):
+                    try:
+                        if os.path.exists(zip_path):
+                            os.remove(zip_path)
+                    except Exception as cleanup_error:
+                        if logger:
+                            logger.warning(f"Failed to remove temporary zip file {zip_path}: {cleanup_error}")
+                    return response
+
+                return send_file(
+                    zip_path,
+                    as_attachment=True,
+                    download_name=zip_basename,
+                    mimetype='application/zip'
+                )
+            except Exception:
+                if os.path.exists(zip_path):
+                    os.remove(zip_path)
+                raise
+        logger.info("download_all_zip did not login forward to login")
+        return redirect(url_for('login'))
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
+
+@app.route('/images/delete_all', methods=['POST'])
+def delete_all_images():
+    """Delete all files and folders under user's image folder, recursively."""
+    try:
+        if session.get('logged_in'):
+            username = helpers.get_username()
+            user_folder = helpers.generate_image_folder(username)
+            if os.path.isdir(user_folder):
+                for dirpath, dirnames, filenames in os.walk(user_folder, topdown=False):
+                    for filename in filenames:
+                        full_filename = os.path.join(dirpath, filename)
+                        os.remove(full_filename)
+                    for dirname in dirnames:
+                        full_dirname = os.path.join(dirpath, dirname)
+                        os.rmdir(full_dirname)
+            return redirect(url_for('images'))
+        logger.info("delete_all_images did not login forward to login")
+        return redirect(url_for('login'))
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return handle_exception(e)
 
           
 @app.route('/imagefiles/<name>')

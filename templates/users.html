@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}All Users | Tesseract Training{% endblock %}
+
+{% block body %}
+<div class="container" style="padding-top: 1rem;">
+  {% include "navbar.html" %}
+
+  <section class="section">
+    <div class="box">
+      <h1 class="title is-4">All Users</h1>
+      <div class="table-container">
+        <table class="table is-striped is-fullwidth">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Created Date</th>
+              <th>Last Access Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email or '' }}</td>
+              <td>
+                {% if user.created_date %}
+                  {{ user.created_date.strftime('%Y-%m-%d %H:%M:%S') }}
+                {% else %}
+                  N/A
+                {% endif %}
+              </td>
+              <td>
+                {% if user.last_access_date %}
+                  {{ user.last_access_date.strftime('%Y-%m-%d %H:%M:%S') }}
+                {% else %}
+                  N/A
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
