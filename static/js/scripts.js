@@ -23,7 +23,7 @@ var login = function() {
       var status = JSON.parse(response)["status"];
 	  console.log("return status: " + status );
             if (status === "Login successful") {
-		  window.location.href = "/forum"; 
+		  window.location.href = "/images"; 
 		  }
       else { 
         // Display the error message

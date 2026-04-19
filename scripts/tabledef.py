@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
 
 # Local
 SQLALCHEMY_DATABASE_URI = 'sqlite:////var/www/tesseracttraining/accounts.db'
@@ -31,6 +32,8 @@ class User(Base):
     username = Column(String(30), unique=True)
     password = Column(String(512))
     email = Column(String(50))
+    created_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    last_access_date = Column(DateTime, nullable=True)
 
     def __repr__(self):
         return '<User %r>' % self.username

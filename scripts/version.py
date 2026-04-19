@@ -3,13 +3,13 @@
 Version information for Tesseract OCR Training application
 """
 
-__version__ = "1.0.1"
-__version_info__ = (1, 0, 1)
+__version__ = "1.0.2"
+__version_info__ = (1, 0, 2)
 
 # Version details
 VERSION_MAJOR = 1
 VERSION_MINOR = 0
-VERSION_PATCH = 1
+VERSION_PATCH = 2
 
 # Build and release information
 RELEASE_NAME = "Forum Edition"

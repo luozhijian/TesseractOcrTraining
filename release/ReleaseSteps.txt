@@ -23,8 +23,10 @@ sudo systemctl restart tesstrain
 
 #some sample code 
 #sudo crontab -l
-#sudo crontab -l
+#editing:    sudo crontab -e   
 #~/src/tesstrainenv
 
+0 2 * * * find /var/www/tesseracttraining -name "*.traineddata" -type f -mtime +2 -delete
 2 2 * * * find /var/www/tesseracttraining -name "*.traineddata_20*" -type f -mtime +2 -delete
 4 2 * * * find /var/www/tesseracttraining -name "*.checkpoint" -type f -mtime +2 -delete
+10 2 * * * find /var/www/tesseracttraining -name "*.zip" -type f -mtime +2 -delete

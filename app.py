@@ -93,6 +93,7 @@ def login():
                         session['logged_in'] = True
                         session['username'] = username
                         return json.dumps({'status': 'Login successful'})
+                        #return images()
                     return json.dumps({'status': 'Invalid user/pass'})
                 return render_template('login.html', form=form)
             except :
@@ -101,7 +102,7 @@ def login():
         user = helpers.get_user()
         if user :
             logger.info('%s login refresh'%user.username)
-        # return images()
+        #return images()
         return render_template('home.html', user=user)
     except Exception as e :
         if logger :
@@ -182,26 +183,20 @@ def sitemap_xml():
 
 @app.route('/users', methods=['GET'])
 def users():
-    """View all users with created and last access dates - accessible to everyone"""
+    """View all users with created and last access dates - accessible to everyone."""
     try:
         with helpers.session_scope() as db_session:
             db_users = db_session.query(tabledef.User).order_by(tabledef.User.username.asc()).all()
             users_with_dates = []
             for db_user in db_users:
-                user_folder = helpers.generate_image_folder(db_user.username)
-                created_date = None
-                last_access_date = None
-                if os.path.isdir(user_folder):
-                    created_date = datetime.datetime.fromtimestamp(os.path.getctime(user_folder))
-                    last_access_date = datetime.datetime.fromtimestamp(os.path.getatime(user_folder))
                 users_with_dates.append({
                     'username': db_user.username,
                     'email': db_user.email,
-                    'created_date': created_date,
-                    'last_access_date': last_access_date,
+                    'created_date': db_user.created_date,
+                    'last_access_date': db_user.last_access_date,
                 })
 
-            return render_template('users.html', users=users_with_dates)
+            return render_template('users.html', users=sorted(users_with_dates, key=lambda x: x['created_date'], reverse=True)  )
     except Exception as e:
         if logger:
             logger.exception(e)

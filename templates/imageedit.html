@@ -9,7 +9,7 @@
         <div class="settings-area">    
           <h1 class="title">Edit image text</h1>   
  		  
-<form action="/savetext?image={{image_path}}" method="POST">
+<form action="/savetext?image={{image_path}}" method="POST" accept-charset="UTF-8">
   <label for="hints">Text for Image:</label>
   <input type="text" id="imagetext" name="imagetext" value="{{current_text}}" size="50" autofocus /> 
   <br>

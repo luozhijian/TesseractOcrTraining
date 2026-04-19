@@ -43,7 +43,15 @@ def get_session():
 def get_user():
     username = session['username']
     if username == 'demo':
-        return tabledef.User(username='demo', password='1', email='demo@demo.com', id=0)  
+        now = datetime.utcnow()
+        return tabledef.User(
+            username='demo',
+            password='1',
+            email='demo@demo.com',
+            id=0,
+            created_date=now,
+            last_access_date=now
+        )
     with session_scope() as s:
         user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
         return user
@@ -56,7 +64,14 @@ def get_username():
 
 def add_user(username, password, email):
     with session_scope() as s:
-        u = tabledef.User(username=username, password=password.decode('utf8'), email=email)
+        now = datetime.utcnow()
+        u = tabledef.User(
+            username=username,
+            password=password.decode('utf8'),
+            email=email,
+            created_date=now,
+            last_access_date=now
+        )
         s.add(u)
         s.commit()
 
@@ -82,7 +97,11 @@ def credentials_valid(username, password):
         with session_scope() as s:
             user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
             if user:
-                return bcrypt.checkpw(password.encode('utf8'), user.password.encode('utf8'))
+                password_ok = bcrypt.checkpw(password.encode('utf8'), user.password.encode('utf8'))
+                if password_ok:
+                    user.last_access_date = datetime.utcnow()
+                    s.commit()
+                return password_ok
             else:
                 return False
     except Exception :
@@ -264,7 +283,7 @@ def list_folder_image_text_pair(username) :
             if text_filename in hash_set :
                 text_filename_case_sensititive = hash_set[text_filename] 
                 full_text_filename = os.path.join(final_path, text_filename_case_sensititive)
-                text_content = open(full_text_filename, 'r').read()
+                text_content = safe_read_image_text(full_text_filename ) 
                 result.append( (one_file, text_filename_case_sensititive, text_content) )
             else :
                 result.append( (one_file, '', '') )
@@ -377,15 +396,22 @@ def save_image_text(username, image_filename, image_text) :
         if os.path.exists(final_path):
             os.remove(final_path)
     else :
-        open(final_path, 'w').write(image_text)
+        encoding = 'ascii' if image_text.isascii() else 'utf-8'
+        with open(final_path, 'w', encoding=encoding, newline='') as f:
+            f.write(image_text)
  
 def read_image_text(username, image_filename ) : 
     final_path = get_txtfilename_from_image(username, image_filename)
+    return  safe_read_image_text(final_path) 
 
+def safe_read_image_text(final_path) :
     if os.path.exists(final_path):
-        text= open(final_path, 'r').read()
-        return text
-    return ''    #return empty instead of None
+        try:
+            with open(final_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except UnicodeDecodeError:
+            return ''
+    return ''
 
 def delete_one_image_file(username, image_filename) :
     final_path = generate_image_fullpath(username, image_filename)
