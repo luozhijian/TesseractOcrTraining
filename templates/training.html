@@ -16,8 +16,49 @@
 <form action="/start_training"  method="POST" >
 
 	<script>
+		  const trainingFilePairs = {{ filepairs | tojson }};
+
+		  function validateTrainingFiles() {
+				var imageFiles = [];
+				var missingTextImages = [];
+
+				for (var i = 0; i < trainingFilePairs.length; i++) {
+					var pair = trainingFilePairs[i];
+					if (!pair || pair.length < 2) {
+						continue;
+					}
+
+					var imageFile = (pair[0] || '').toString();
+					var imageLower = imageFile.toLowerCase();
+					if (!(imageLower.endsWith('.tif') || imageLower.endsWith('.png'))) {
+						continue;
+					}
+
+					imageFiles.push(imageFile);
+					var expectedTextFile = imageFile.replace(/\.(tif|png)$/i, '.gt.txt').toLowerCase();
+					var actualTextFile = (pair[1] || '').toString().toLowerCase();
+					if (actualTextFile !== expectedTextFile) {
+						missingTextImages.push(imageFile);
+					}
+				}
+
+				if (imageFiles.length < 2) {
+					alert("Training needs at least 2 image files (.tif or .png).");
+					return false;
+				}
+
+				if (missingTextImages.length > 0) {
+					alert("Missing .gt.txt for image file(s):\n" + missingTextImages.join('\n'));
+					return false;
+				}
+
+				return true;
+		  }
 
 		  function confirm_training() {
+				if (!validateTrainingFiles()) {
+					return false;
+				}
 				var model_name= document.getElementById("model_name").value.trim();
 				if (model_name.length <=1 ) {
 					alert("please input a validate model name");

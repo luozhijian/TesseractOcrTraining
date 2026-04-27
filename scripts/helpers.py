@@ -93,7 +93,14 @@ def hash_password(password):
 def credentials_valid(username, password):
     try:    
         if username == 'demo' :
-            return password == '1'
+            if password != '1':
+                return False
+            with session_scope() as s:
+                demo_user = s.query(tabledef.User).filter(tabledef.User.username.in_(['demo'])).first()
+                if demo_user:
+                    demo_user.last_access_date = datetime.utcnow()
+                    s.commit()
+            return True
         with session_scope() as s:
             user = s.query(tabledef.User).filter(tabledef.User.username.in_([username])).first()
             if user:
