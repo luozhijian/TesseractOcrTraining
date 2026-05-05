@@ -193,6 +193,7 @@ def system_info():
             user=user,
             system_info=_get_system_info(),
             training_status=_get_training_status_info(),
+            server_datetime=datetime.datetime.now(),
             show_log_tail=show_log_tail,
             log_tail_content=log_tail_content,
             log_file_path=log_file_path,
@@ -942,6 +943,7 @@ def threaded_function_start_training(args):
                     p.wait()
                 the_logfile.flush()
                 the_logfile.write('\n\nCompleted: %s'%logfilename)
+                training_in_process =False
             except Exception as e :
                 training_in_process = False
                 the_logfile.write(str(e))

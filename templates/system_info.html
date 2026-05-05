@@ -39,6 +39,7 @@
       <div class="column is-half">
         <div class="box">
           <h2 class="title is-4">Training Status</h2>
+          <p><strong>Current server datetime:</strong> {{ server_datetime.strftime('%Y-%m-%d %H:%M:%S') }}</p>
           {% if training_status.training_in_process %}
             <p class="has-text-danger has-text-weight-bold">One training is in process.</p>
             {% if training_status.training_in_process_datetime %}
