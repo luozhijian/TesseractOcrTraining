@@ -54,6 +54,54 @@ training_in_process = False
 training_in_process_datetime =''
 
 
+def _read_proc_stat_cpu_times():
+    with open('/proc/stat', 'r', encoding='utf-8') as stat_file:
+        first_line = stat_file.readline().strip()
+    fields = first_line.split()
+    if len(fields) < 5 or fields[0] != 'cpu':
+        return None
+    values = [int(v) for v in fields[1:]]
+    total = sum(values)
+    idle = values[3] + (values[4] if len(values) > 4 else 0)
+    return total, idle
+
+
+def _get_linux_cpu_percent():
+    try:
+        first = _read_proc_stat_cpu_times()
+        if not first:
+            return None
+        time.sleep(0.2)
+        second = _read_proc_stat_cpu_times()
+        if not second:
+            return None
+        total_delta = second[0] - first[0]
+        idle_delta = second[1] - first[1]
+        if total_delta <= 0:
+            return None
+        busy_percent = (1.0 - (idle_delta / total_delta)) * 100.0
+        return round(max(0.0, min(100.0, busy_percent)), 2)
+    except Exception:
+        return None
+
+
+def _get_linux_memory_percent():
+    try:
+        mem_info = {}
+        with open('/proc/meminfo', 'r', encoding='utf-8') as mem_file:
+            for line in mem_file:
+                key, value = line.split(':', 1)
+                mem_info[key] = int(value.strip().split()[0])
+        total = mem_info.get('MemTotal')
+        available = mem_info.get('MemAvailable')
+        if not total or available is None:
+            return None
+        used_percent = ((total - available) / total) * 100.0
+        return round(max(0.0, min(100.0, used_percent)), 2)
+    except Exception:
+        return None
+
+
 def _get_system_info():
     system_drive = Path(app.root_path).anchor or '/'
     cpu_percent = None
@@ -61,13 +109,19 @@ def _get_system_info():
 
     if psutil:
         try:
-            cpu_percent = psutil.cpu_percent(interval=0.2)
+            cpu_percent = round(psutil.cpu_percent(interval=0.2), 2)
         except Exception:
             cpu_percent = None
         try:
-            memory_percent = psutil.virtual_memory().percent
+            memory_percent = round(psutil.virtual_memory().percent, 2)
         except Exception:
             memory_percent = None
+
+    # Linux fallback when psutil is unavailable or fails.
+    if cpu_percent is None and sys.platform.startswith('linux'):
+        cpu_percent = _get_linux_cpu_percent()
+    if memory_percent is None and sys.platform.startswith('linux'):
+        memory_percent = _get_linux_memory_percent()
 
     disk_usage = shutil.disk_usage(system_drive)
     free_disk_gb = round(disk_usage.free / (1024 ** 3), 2)
