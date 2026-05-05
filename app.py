@@ -22,12 +22,17 @@ import tempfile
 import werkzeug
 import datetime
 from threading import Thread
+try:
+    import psutil
+except ImportError:
+    psutil = None
 werkzeug.serving._log_add_style = False
 
 app = Flask(__name__)
 
 app.secret_key = 'TesseractOcrTraining' # Generic key for dev purposes only
 
+log_file_path = '/var/log/tesseracttraining/tesseracttraining.log'
 # Make version information available to all templates
 @app.context_processor
 def inject_version():
@@ -37,7 +42,7 @@ def inject_version():
 logger =None 
 
 logger = logging.getLogger('MainProgram')
-file_handler = logging.handlers.RotatingFileHandler('/var/log/tesseracttraining/tesseracttraining.log', maxBytes=2000000, backupCount=50)
+file_handler = logging.handlers.RotatingFileHandler(log_file_path, maxBytes=2000000, backupCount=50)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 
@@ -46,6 +51,68 @@ logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 helpers.logger = logger
 training_in_process = False    
+training_in_process_datetime =''
+
+
+def _get_system_info():
+    system_drive = Path(app.root_path).anchor or '/'
+    cpu_percent = None
+    memory_percent = None
+
+    if psutil:
+        try:
+            cpu_percent = psutil.cpu_percent(interval=0.2)
+        except Exception:
+            cpu_percent = None
+        try:
+            memory_percent = psutil.virtual_memory().percent
+        except Exception:
+            memory_percent = None
+
+    disk_usage = shutil.disk_usage(system_drive)
+    free_disk_gb = round(disk_usage.free / (1024 ** 3), 2)
+
+    return {
+        'cpu_percent': cpu_percent,
+        'memory_percent': memory_percent,
+        'free_disk_gb': free_disk_gb,
+        'system_drive': system_drive,
+    }
+
+
+def _get_training_status_info():
+    global training_in_process_datetime
+    global training_in_process
+    started_at = training_in_process_datetime if training_in_process else None
+    minutes_ago = None
+    can_stop = False
+
+    if started_at:
+        elapsed_seconds = max((datetime.datetime.now() - started_at).total_seconds(), 0)
+        minutes_ago = int(elapsed_seconds // 60)
+        can_stop = elapsed_seconds >= 30 * 60
+
+    return {
+        'training_in_process': training_in_process,
+        'training_in_process_datetime': started_at,
+        'minutes_ago': minutes_ago,
+        'can_stop': can_stop,
+    }
+
+
+def _read_last_log_bytes(file_path, byte_count=10000):
+    try:
+        with open(file_path, 'rb') as log_file:
+            log_file.seek(0, os.SEEK_END)
+            file_size = log_file.tell()
+            seek_position = max(file_size - byte_count, 0)
+            log_file.seek(seek_position)
+            log_bytes = log_file.read(byte_count)
+            return log_bytes.decode('utf-8', errors='replace')
+    except Exception as e:
+        if logger:
+            logger.exception(e)
+        return 'Unable to read log content.'
     
 #  some code is from Flaskex
 
@@ -113,6 +180,53 @@ def login():
 def logout():
     session['logged_in'] = False
     return redirect(url_for('login'))
+
+
+@app.route('/system_info', methods=['GET'])
+def system_info():
+    if session.get('logged_in'):
+        user = helpers.get_user()
+        show_log_tail = user and user.username == 'luozhijian'
+        log_tail_content = _read_last_log_bytes(log_file_path, 10000) if show_log_tail else ''
+        return render_template(
+            'system_info.html',
+            user=user,
+            system_info=_get_system_info(),
+            training_status=_get_training_status_info(),
+            show_log_tail=show_log_tail,
+            log_tail_content=log_tail_content,
+            log_file_path=log_file_path,
+            status_message=request.args.get('message', ''),
+            status_type=request.args.get('status_type', 'is-info')
+        )
+    return redirect(url_for('login'))
+
+
+@app.route('/stop_training', methods=['POST'])
+def stop_training():
+    global training_in_process
+
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    if not training_in_process:
+        return redirect(url_for('system_info', message='No training is currently in process.', status_type='is-warning'))
+
+    training_status = _get_training_status_info()
+    if not training_status['can_stop']:
+        return redirect(
+            url_for(
+                'system_info',
+                message='You have to wait at least 30 minutes to stop it, please wait and then refresh the page to Stop it.',
+                status_type='is-warning'
+            )
+        )
+
+    if request.form.get('stop_confirmation', '').strip().lower() != 'stop':
+        return redirect(url_for('system_info', message='Stop request cancelled. Type stop to continue.', status_type='is-warning'))
+
+    training_in_process = False
+    return redirect(url_for('system_info', message='training_in_process has been set to False.', status_type='is-success'))
 
 
 # -------- Signup ---------------------------------------------------------- #
@@ -196,7 +310,7 @@ def users():
                     'last_access_date': db_user.last_access_date,
                 })
 
-            return render_template('users.html', users=sorted(users_with_dates, key=lambda x: x['created_date'], reverse=True)  )
+            return render_template('users.html', users=sorted(users_with_dates, key=lambda x: x['last_access_date'], reverse=True)  )
     except Exception as e:
         if logger:
             logger.exception(e)
@@ -240,6 +354,7 @@ def download_all_zip():
         if session.get('logged_in'):
             username = helpers.get_username()
             user_folder = helpers.generate_image_folder(username)
+            logger.info("download_all_zip: " + user_folder)
             zip_basename = f"{username}_images.zip"
             fd, zip_path = tempfile.mkstemp(suffix=".zip", prefix=f"{username}_", dir=user_folder)
             os.close(fd)
@@ -321,8 +436,7 @@ def download(name):
         filename_with_path = request.args.get("path")
         filename_with_path_unquoted = urllib.parse.unquote_plus(filename_with_path)
         path_part, filenamePart = os.path.split(filename_with_path_unquoted)
-        print (path_part)
-        print (filenamePart)
+ 
         real_folder = os.path.join( result_folder, path_part)
         
         path_real_folder = Path(real_folder)
@@ -789,7 +903,7 @@ def training():
             message_is_running=''
             enable_disable =''
             if  training_in_process :
-                message_is_running ="Another user is running the training, can only one user can use it at the same time, please visit late to check"
+                message_is_running ="Another user is running the training, can only one user can use it at the same time, please visit SystemInfo page to check if you can stop it"
                 enable_disable ='disabled'
             return render_template(
                 'training.html',
@@ -807,14 +921,17 @@ def training():
 
 def threaded_function_start_training(args):
     global training_in_process
+    global training_in_process_datetime
     try :
-        print ('in threaded_function_start_training')
+
         (is_validate_command, command_list, logfilename ) =args
+        logger.info ('In threaded_function_start_training: %s' % command_list)
         with  open(logfilename, 'a', encoding="utf-8")  as the_logfile  :
             try :
                 if training_in_process :
                     raise Exception( 'Another training already in process')
                 training_in_process = True
+                training_in_process_datetime = datetime.datetime.now()
                 the_logfile.write( command_list)
                 the_logfile.write('\n\t\n\t\nThere is possible the log failed to refresh in middle, please do not refresh,\n but go Menu Logs to see the logs\n\t\n\t\n')
  
@@ -826,7 +943,7 @@ def threaded_function_start_training(args):
                 the_logfile.flush()
                 the_logfile.write('\n\nCompleted: %s'%logfilename)
             except Exception as e :
-                print(e)
+                training_in_process = False
                 the_logfile.write(str(e))
                 the_logfile.flush()
                 if logger :
@@ -836,6 +953,7 @@ def threaded_function_start_training(args):
             logger.exception(e2)     
     finally :
         training_in_process =False
+        pass
 
 # -------- start_training --------------- #
 @app.route('/start_training', methods=['POST'])

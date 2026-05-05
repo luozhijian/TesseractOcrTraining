@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}System Info | Tesseract Training{% endblock %}
+
+{% block body %}
+<div class="container" style="padding-top: 1rem;">
+  {% include "navbar.html" %}
+
+  <section class="section">
+    {% if status_message %}
+    <article class="message {{ status_type }}">
+      <div class="message-body">
+        {{ status_message }}
+      </div>
+    </article>
+    {% endif %}
+
+    <div class="columns is-multiline">
+      <div class="column is-half">
+        <div class="box">
+          <h1 class="title is-4">System Info</h1>
+          <p><strong>CPU Usage:</strong>
+            {% if system_info.cpu_percent is not none %}
+              {{ system_info.cpu_percent }}%
+            {% else %}
+              N/A
+            {% endif %}
+          </p>
+          <p><strong>Memory Usage:</strong>
+            {% if system_info.memory_percent is not none %}
+              {{ system_info.memory_percent }}%
+            {% else %}
+              N/A
+            {% endif %}
+          </p>
+          <p><strong>Free Disk Space ({{ system_info.system_drive }}):</strong> {{ system_info.free_disk_gb }} GB</p>
+        </div>
+      </div>
+
+      <div class="column is-half">
+        <div class="box">
+          <h2 class="title is-4">Training Status</h2>
+          {% if training_status.training_in_process %}
+            <p class="has-text-danger has-text-weight-bold">One training is in process.</p>
+            {% if training_status.training_in_process_datetime %}
+              <p><strong>Started at:</strong> {{ training_status.training_in_process_datetime.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+            {% endif %}
+            {% if training_status.minutes_ago is not none %}
+              <p><strong>Started:</strong> {{ training_status.minutes_ago }} minutes ago</p>
+            {% endif %}
+
+            {% if training_status.can_stop %}
+              <form id="stopTrainingForm" method="post" action="/stop_training" style="margin-top: 1rem;">
+                <input type="hidden" name="stop_confirmation" id="stopConfirmationInput">
+                <button type="button" class="button is-danger" onclick="confirmStopTraining()">Stop Training</button>
+              </form>
+            {% else %}
+              <article class="message is-warning" style="margin-top: 1rem;">
+                <div class="message-body">
+                  You have to wait at least 30 minutes to stop it, please wait and then refresh the page to Stop it.
+                </div>
+              </article>
+            {% endif %}
+          {% else %}
+            <p><strong>training_in_process:</strong> No</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if show_log_tail %}
+    <div class="box">
+      <h2 class="title is-4">Last 10KB of Log</h2>
+      <p><strong>Log file:</strong> {{ log_file_path }}</p>
+      <pre style="max-height: 360px; overflow-y: auto; white-space: pre-wrap;">{{ log_tail_content }}</pre>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function confirmStopTraining() {
+    var confirmation = window.prompt('Type "stop" to continue stopping the training.');
+    if (confirmation === null) {
+      return;
+    }
+
+    if (confirmation.trim().toLowerCase() !== 'stop') {
+      window.alert('Stop cancelled. Please type "stop" exactly to continue.');
+      return;
+    }
+
+    document.getElementById('stopConfirmationInput').value = confirmation;
+    document.getElementById('stopTrainingForm').submit();
+  }
+</script>
+{% endblock %}
